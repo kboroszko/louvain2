@@ -23,6 +23,22 @@ void addEdge(Graph *g, int index, int from, int to, float value){
     g->edges[index] = e;
 }
 
+void sortEdges(Graph *g){
+    qsort(g->edges, g->numEdges, sizeof(Edge), compareEdges);
+
+    int counter = 0;
+    int currVertice = 0;
+    while(counter < g->numEdges && currVertice < g->size){
+        Edge e = g->edges[counter];
+        if(e.from > currVertice){
+            g->verticeLastEdgeExclusive[currVertice] = counter;
+            currVertice++;
+        }
+        counter++;
+    }
+    g->verticeLastEdgeExclusive[currVertice] = counter;
+}
+
 Graph * initGraph(MData * data){
     if(data->format.format == ARRAY){
         THROW("Array matrix type not supported!", 16);
@@ -55,21 +71,9 @@ Graph * initGraph(MData * data){
         }
     }
 
-    qsort(g->edges, edges, sizeof(Edge), compareEdges);
+    sortEdges(g);
 
-    counter = 0;
-    int currVertice = 0;
-    while(counter < edges && currVertice < g->size){
-        Edge e = g->edges[counter];
-        if(e.from > currVertice){
-            g->verticeLastEdgeExclusive[currVertice] = counter;
-            currVertice++;
-        }
-        counter++;
-    }
-    g->verticeLastEdgeExclusive[currVertice] = counter;
-
-    currVertice=0;
+    int currVertice=0;
     for(int i=0; i<g->numEdges; i++){
         Edge e = g->edges[i];
         printf("%d\t->\t%d", e.from, e.to);

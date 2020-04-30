@@ -20,6 +20,8 @@ typedef struct {
     int * verticeLastEdgeExclusive;
 } Graph;
 
+void sortEdges(Graph *g);
+
 int compareEdges(const void * a, const void * b);
 
 Graph * initGraph(MData * data);
