@@ -17,12 +17,12 @@ void validateFormat(MFormat form){
 
 MFormat readSignature(FILE* filePtr){
     MFormat ret;
-    char formatStr[200];
+    char formatStr[20];
     char valueTypeStr[20];
     char symmetryStr[20];
     int a = fscanf(filePtr,"%*s %*s %s",formatStr);
     int b = fscanf(filePtr,"%s", valueTypeStr)==1;
-    int c = fscanf(filePtr,"%s",symmetryStr)==1;
+    int c = fscanf(filePtr,"%s\n",symmetryStr)==1;
     if(a==1 && b==1 && c==1){
         printf("readSignature: read format %s %s %s\n", formatStr, valueTypeStr, symmetryStr);
     } else {
@@ -65,20 +65,44 @@ MFormat readSignature(FILE* filePtr){
     return ret;
 }
 
+MData * readData(const char * filename){
+    FILE* filePtr = fopen("mycielskian4.mtx","r");
+    if (filePtr==NULL)
+    {
+        THROW("readData: no such file.", 10);
+    }
 
+    MFormat format = readSignature(filePtr);
+    char line[1024];
+    int num_cols, num_rows, num_lines;
+//    fscanf(filePtr,"%s",line);
+    while(fscanf(filePtr,"%1024[^\n]\n",line)!= EOF){
+        if(line[0] != '%' && line[0] != '\000'){
+            int success = -1;
+            if(format.format == COORDINATE){
+                success = sscanf(line, "%d %d %d", &num_rows, &num_cols, &num_lines);
+            } else {
+                success = sscanf(line, "%d %d", &num_rows, &num_cols);
+                num_lines = num_rows * num_cols;
+            }
+            if(success != 3 && success != 2){
+                THROW("readData: error reading matrix size!", 11);
+            }
+            break;
+        }
+    }
+
+    printf("reading rows=%d  cols=%d  lines=%d", num_rows, num_cols, num_lines);
+    return initMData(num_rows, num_cols, num_lines, format);
+}
 
 
 int main(){
     printf("hello world\n");
 
-    FILE* ptr = fopen("mycielskian4.mtx","r");
-    if (ptr==NULL)
-    {
-        printf("no such file.");
-        return 1;
-    }
-    MFormat format = readSignature(ptr);
-    printf("readSignature: read format %d %d %d\n", format.format, format.valueType, format.symmetry);
+    MData * dat = readData("mycielskian4.mtx");
+
+    destroyMData(dat);
 
 
 
