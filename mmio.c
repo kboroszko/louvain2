@@ -92,8 +92,45 @@ MData * readData(const char * filename){
         }
     }
 
-    printf("reading rows=%d  cols=%d  lines=%d", num_rows, num_cols, num_lines);
-    return initMData(num_rows, num_cols, num_lines, format);
+    printf("reading rows=%d  cols=%d  lines=%d\n", num_rows, num_cols, num_lines);
+
+    MData *data = initMData(num_rows, num_cols, num_lines, format);
+
+    for(int i=0; i<num_lines; i++){
+        int success = -1;
+        if(format.format == ARRAY){
+            data->from[i] = i/num_cols;
+            data->to[i] = i - (data->from[i] * num_cols);
+            success = fscanf(filePtr, "%f\n", data->value + i);
+        } else {
+            if(format.valueType == PATTERN){
+                success = fscanf(filePtr, "%d %d\n", data->from + i, data->to + i);
+                data->value[i] = 1.0;
+            } else {
+                success = fscanf(filePtr, "%d %d %f\n",  data->from + i, data->to + i, data->value + i);
+            }
+        }
+        if(success == -1){
+            THROW("readData: error reading rows", 13);
+        }
+    }
+    return data;
+}
+
+void printData(MData * data){
+    if(data->format.format == ARRAY){
+        THROW("PRINTING ARRAY DATA NOT SUPPORTED!", 14);
+    }
+
+    printf("%d %d %d\n", data->rows, data->cols, data->size);
+
+    for(int i=0; i < data->size; i++){
+        if(data->format.valueType == PATTERN){
+            printf("%d %d\n", data->from[i], data->to[i]);
+        } else {
+            printf("%d %d %f\n", data->from[i], data->to[i], data->value[i]);
+        }
+    }
 }
 
 
@@ -101,7 +138,7 @@ int main(){
     printf("hello world\n");
 
     MData * dat = readData("mycielskian4.mtx");
-
+    printData(dat);
     destroyMData(dat);
 
 

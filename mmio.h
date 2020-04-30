@@ -30,9 +30,41 @@ typedef struct {
     int symmetry;
 } MFormat;
 
+typedef struct {
+    int* from;
+    int* to;
+    float* value;
+    int size;
+    MFormat format;
+    int rows;
+    int cols;
+} MData;
+
 void validateFormat(MFormat form);
 
 MFormat readSignature(FILE* filePtr);
 
+MData * readData(const char * filename);
+
+void printData(MData * data);
+
+MData * initMData(int rows, int cols, int size, MFormat format){
+    MData * ret = (MData*) malloc(sizeof(MData));
+    ret->from = (int*) malloc(sizeof(int) * size);
+    ret->to = (int*) malloc(sizeof(int) * size);
+    ret->value = (float*) malloc(sizeof(float) * size);
+    ret->size = size;
+    ret->format = format;
+    ret->rows = rows;
+    ret->cols = cols;
+    return ret;
+}
+
+void destroyMData(MData* mdata){
+    free(mdata->from);
+    free(mdata->to);
+    free(mdata->value);
+    free(mdata);
+}
 
 #endif //LOUVAIN2_MMIO_H
