@@ -4,6 +4,20 @@
 
 #include "graph-utils.h"
 
+#define EDGES_IDX(graph, vertice) ((vertice) > 0 ? (graph)->verticeLastEdgeExclusive[(vertice)] : 0)
+
+int compareEdges(const void * a, const void * b){
+    Edge * edgeA = (Edge*) a;
+    Edge * edgeB = (Edge*) b;
+    if(edgeA->from > edgeB->from){
+        return 1;
+    } else if(edgeB->from > edgeA->from){
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
 void addEdge(Graph *g, int index, int from, int to, float value){
     Edge e = {.from=from - 1, .to=to - 1, .value=value};
     g->edges[index] = e;
@@ -33,7 +47,6 @@ Graph * initGraph(MData * data){
     g->numEdges = edges;
     g->size = data->rows;
 
-    //TODO transfer edges
     int counter=0;
     for(int i=0; i<data->size; i++){
         addEdge(g, counter++, data->from[i], data->to[i], data->value[i]);
@@ -42,13 +55,39 @@ Graph * initGraph(MData * data){
         }
     }
 
+    qsort(g->edges, edges, sizeof(Edge), compareEdges);
+
+    counter = 0;
+    int currVertice = 0;
+    while(counter < edges && currVertice < g->size){
+        Edge e = g->edges[counter];
+        if(e.from > currVertice){
+            g->verticeLastEdgeExclusive[currVertice] = counter;
+            currVertice++;
+        }
+        counter++;
+    }
+    g->verticeLastEdgeExclusive[currVertice] = counter;
+
+    currVertice=0;
+    for(int i=0; i<g->numEdges; i++){
+        Edge e = g->edges[i];
+        printf("%d\t->\t%d", e.from, e.to);
+        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
+            printf("\tEND EDGES %d\n", currVertice);
+            currVertice++;
+        } else {
+            printf("\n");
+        }
+    }
+
     return g;
 }
 
 
 float hasEdge(Graph *g, int from, int to){
-    for(int i=0; i<g->numEdges; i++){
-        if(g->edges[i].from == from && g->edges[i].to == to){
+    for(int i=EDGES_IDX(g, from-1); i<EDGES_IDX(g, from); i++){
+        if(g->edges[i].to == to){
             return g->edges[i].value;
         }
     }
