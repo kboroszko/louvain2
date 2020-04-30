@@ -134,21 +134,3 @@ float getKiin(Graph *g, int vertice, int* cliques, int in ){
     return sum;
 }
 
-
-int main(){
-    printf("hello world\n");
-
-    MData * dat = readData("mycielskian4.mtx");
-    printData(dat);
-
-    Graph *g = initGraph(dat);
-    destroyMData(dat);
-
-    printGraph(g);
-
-    destroyGraph(g);
-
-
-
-    return 0;
-}

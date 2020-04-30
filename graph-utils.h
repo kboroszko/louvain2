@@ -32,7 +32,7 @@ void printGraph(Graph *g);
 
 float hasEdge(Graph *g, int from, int to);
 
-inline void addEdge(Graph *g, int index, int from, int to, float value);
+void addEdge(Graph *g, int index, int from, int to, float value);
 
 float getKi(Graph *g, int vertice);
 
