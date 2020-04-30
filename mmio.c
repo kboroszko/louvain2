@@ -66,7 +66,7 @@ MFormat readSignature(FILE* filePtr){
 }
 
 MData * readData(const char * filename){
-    FILE* filePtr = fopen("mycielskian4.mtx","r");
+    FILE* filePtr = fopen(filename,"r");
     if (filePtr==NULL)
     {
         THROW("readData: no such file.", 10);
@@ -133,15 +133,21 @@ void printData(MData * data){
     }
 }
 
+MData * initMData(int rows, int cols, int size, MFormat format){
+    MData * ret = (MData*) malloc(sizeof(MData));
+    ret->from = (int*) malloc(sizeof(int) * size);
+    ret->to = (int*) malloc(sizeof(int) * size);
+    ret->value = (float*) malloc(sizeof(float) * size);
+    ret->size = size;
+    ret->format = format;
+    ret->rows = rows;
+    ret->cols = cols;
+    return ret;
+}
 
-int main(){
-    printf("hello world\n");
-
-    MData * dat = readData("mycielskian4.mtx");
-    printData(dat);
-    destroyMData(dat);
-
-
-
-    return 0;
+void destroyMData(MData* mdata){
+    free(mdata->from);
+    free(mdata->to);
+    free(mdata->value);
+    free(mdata);
 }

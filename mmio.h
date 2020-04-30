@@ -48,23 +48,8 @@ MData * readData(const char * filename);
 
 void printData(MData * data);
 
-MData * initMData(int rows, int cols, int size, MFormat format){
-    MData * ret = (MData*) malloc(sizeof(MData));
-    ret->from = (int*) malloc(sizeof(int) * size);
-    ret->to = (int*) malloc(sizeof(int) * size);
-    ret->value = (float*) malloc(sizeof(float) * size);
-    ret->size = size;
-    ret->format = format;
-    ret->rows = rows;
-    ret->cols = cols;
-    return ret;
-}
+MData * initMData(int rows, int cols, int size, MFormat format);
 
-void destroyMData(MData* mdata){
-    free(mdata->from);
-    free(mdata->to);
-    free(mdata->value);
-    free(mdata);
-}
+void destroyMData(MData* mdata);
 
 #endif //LOUVAIN2_MMIO_H

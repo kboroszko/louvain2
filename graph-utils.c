@@ -1,0 +1,93 @@
+//
+// Created by kajetan on 30.04.2020.
+//
+
+#include "graph-utils.h"
+
+void addEdge(Graph *g, int index, int from, int to, float value){
+    Edge e = {.from=from - 1, .to=to - 1, .value=value};
+    g->edges[index] = e;
+}
+
+Graph * initGraph(MData * data){
+    if(data->format.format == ARRAY){
+        THROW("Array matrix type not supported!", 16);
+    }
+    int onDiagonal = 0;
+    if(data->format.symmetry != SKEW){
+        for(int i=0; i<data->size; i++){
+            if(data->from[i] == data->to[i]){
+                onDiagonal++;
+            }
+        }
+    }
+    int edges = (data->size - onDiagonal);
+    if(data->format.symmetry == SYMMETRIC || data->format.symmetry == SKEW){
+        edges = edges * 2;
+    }
+    edges += data->rows;
+
+    Graph *g = malloc(sizeof(Graph));
+    g->verticeLastEdgeExclusive = (int*) malloc(sizeof(int) * data->rows);
+    g->edges = (Edge*) malloc(sizeof(Edge) * edges);
+    g->numEdges = edges;
+    g->size = data->rows;
+
+    //TODO transfer edges
+    int counter=0;
+    for(int i=0; i<data->size; i++){
+        addEdge(g, counter++, data->from[i], data->to[i], data->value[i]);
+        if(data->format.symmetry == SKEW || data->format.symmetry == SYMMETRIC){
+            addEdge(g, counter++, data->to[i], data->from[i], data->value[i]);
+        }
+    }
+
+    return g;
+}
+
+
+float hasEdge(Graph *g, int from, int to){
+    for(int i=0; i<g->numEdges; i++){
+        if(g->edges[i].from == from && g->edges[i].to == to){
+            return g->edges[i].value;
+        }
+    }
+    return -1.f;
+}
+
+void printGraph(Graph *g){
+    for(int i=0; i<g->size; i++){
+        float val = hasEdge(g, i, 0);
+        printf("%2.2f", val >= 0 ? val : 0.f);
+        for(int j=1; j < g->size; j++){
+            val = hasEdge(g, i, j);
+            printf(" %2.2f", val >= 0 ? val : 0.f);
+        }
+        printf("\n");
+    }
+}
+
+void destroyGraph(Graph* g){
+    free(g->edges);
+    free(g->verticeLastEdgeExclusive);
+    free(g);
+}
+
+
+int main(){
+    printf("hello world\n");
+
+    MData * dat = readData("mycielskian4.mtx");
+    printData(dat);
+
+    Graph *g = initGraph(dat);
+    destroyMData(dat);
+
+    printGraph(g);
+
+    destroyGraph(g);
+
+
+
+    return 0;
+}
