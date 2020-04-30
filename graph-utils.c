@@ -76,7 +76,7 @@ Graph * initGraph(MData * data){
 //    int currVertice=0;
 //    for(int i=0; i<g->numEdges; i++){
 //        Edge e = g->edges[i];
-//        printf("%d\t->\t%d", e.from, e.to);
+//        printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
 //        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
 //            printf("\tEND EDGES %d\n", currVertice);
 //            currVertice++;
@@ -114,6 +114,24 @@ void destroyGraph(Graph* g){
     free(g->edges);
     free(g->verticeLastEdgeExclusive);
     free(g);
+}
+
+float getKi(Graph *g, int vertice){
+    float sum=0;
+    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
+        sum+= g->edges[i].value;
+    }
+    return sum;
+}
+
+float getKiin(Graph *g, int vertice, int* cliques, int in ){
+    float sum=0;
+    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
+        Edge e = g->edges[i];
+        if(cliques[e.to] == in)
+            sum+= e.value;
+    }
+    return sum;
 }
 
 

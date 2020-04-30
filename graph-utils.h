@@ -34,7 +34,8 @@ float hasEdge(Graph *g, int from, int to);
 
 inline void addEdge(Graph *g, int index, int from, int to, float value);
 
-//float getKi(Graph *g, int vertice);
+float getKi(Graph *g, int vertice);
 
+float getKiin(Graph *g, int vertice, int* cliques, int in );
 
 #endif //LOUVAIN2_GRAPH_UTILS_H
