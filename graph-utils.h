@@ -7,6 +7,8 @@
 
 #include "mmio.h"
 
+#define EDGES_IDX(graph, vertice) ((vertice) > 0 ? (graph)->verticeLastEdgeExclusive[(vertice)] : 0)
+
 typedef struct{
     int from;
     int to;
@@ -33,9 +35,5 @@ void printGraph(Graph *g);
 float hasEdge(Graph *g, int from, int to);
 
 void addEdge(Graph *g, int index, int from, int to, float value);
-
-float getKi(Graph *g, int vertice);
-
-float getKiin(Graph *g, int vertice, int* cliques, int in );
 
 #endif //LOUVAIN2_GRAPH_UTILS_H

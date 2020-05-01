@@ -4,7 +4,6 @@
 
 #include "graph-utils.h"
 
-#define EDGES_IDX(graph, vertice) ((vertice) > 0 ? (graph)->verticeLastEdgeExclusive[(vertice)] : 0)
 
 int compareEdges(const void * a, const void * b){
     Edge * edgeA = (Edge*) a;
@@ -116,21 +115,4 @@ void destroyGraph(Graph* g){
     free(g);
 }
 
-float getKi(Graph *g, int vertice){
-    float sum=0;
-    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
-        sum+= g->edges[i].value;
-    }
-    return sum;
-}
-
-float getKiin(Graph *g, int vertice, int* cliques, int in ){
-    float sum=0;
-    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
-        Edge e = g->edges[i];
-        if(cliques[e.to] == in)
-            sum+= e.value;
-    }
-    return sum;
-}
 
