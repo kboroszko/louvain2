@@ -34,8 +34,10 @@ void sortEdges(Graph *g){
     while(counter < g->numEdges && currVertice < g->size){
         Edge e = g->edges[counter];
         if(e.from > currVertice){
-            g->verticeLastEdgeExclusive[currVertice] = counter;
-            currVertice++;
+            while(currVertice < e.from){
+                g->verticeLastEdgeExclusive[currVertice] = counter;
+                currVertice++;
+            }
         }
         counter++;
     }
@@ -85,12 +87,11 @@ void printEdges(Graph *g){
     for(int i=0; i<g->numEdges; i++){
         Edge e = g->edges[i];
         printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
-        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
-            printf("\tEND EDGES %d\n", currVertice);
+        while(i+1 == g->verticeLastEdgeExclusive[currVertice]){
+            printf("\tEND EDGES %d", currVertice);
             currVertice++;
-        } else {
-            printf("\n");
         }
+        printf("\n");
     }
 }
 

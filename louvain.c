@@ -155,26 +155,27 @@ void phaseTwo(Graph *g, int *cliques){
 
     changeEdges(g, cliques, mins);
 
-    printf("\n------------------------------------------------------\n");
-    printEdges(g);
     sortEdges(g);
-    printf("\n------------------------------------------------------\n");
-    printEdges(g);
 
-    for(int vertice=0; vertice<g->size; vertice++){
-        float sum = 0;
-        Edge *toSelf;
-        for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
-            Edge *e = g->edges + i;
-            if(e->from == e->to){
-                sum += e->value;
-                e->value = 0;
-                toSelf = e;
+    float sum=0;
+    int from=0;
+    int to=0;
+    Edge *lastEdge = g->edges;
+    for(int i=0; i<g->numEdges; i++){
+        Edge *e = g->edges + i;
+        if(e->from > from || e->to > to){
+            if(e->from > from){
+                from = e->from;
             }
+            to = e->to;
+            if(sum > 0){
+                lastEdge->value = sum;
+            }
+            sum = 0;
         }
-        if(sum>0){
-            toSelf->value = sum;
-        }
+        lastEdge = e;
+        sum += e->value;
+        e->value = 0;
     }
 }
 
@@ -195,11 +196,16 @@ int main(){
     }
     phaseOne(g, cliques,0);
 
-    printEdges(g);
+//    printEdges(g);
 
     phaseTwo(g, cliques);
 
-    printEdges(g);
+//    for(int i=0; i<g->size; i++){
+//        printf("%d\n", cliques[i]);
+//    }
+//    printEdges(g);
+
+
 
     destroyGraph(g);
 
