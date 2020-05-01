@@ -28,7 +28,7 @@ def get_cmap(n, name='hsv'):
     return plt.cm.get_cmap(name, n+1)
 
 cmap = get_cmap(max(cliques))
-colors = [cmap(x) for x in cliques]
+colors = [cmap(x+1) for x in cliques]
 
 nx.draw_networkx(G, node_shape='o', node_color=colors, with_labels=True)
 

@@ -16,4 +16,6 @@ float dQ(Graph*g, int vertice, int *clliques, int in, float sigma, float m);
 
 void phaseOne(Graph *g, int *cliques, float minimum);
 
+void printAll(Graph*g, int* cliques);
+
 #endif //LOUVAIN2_LOUVAIN_H
