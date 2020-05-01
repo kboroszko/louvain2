@@ -32,6 +32,8 @@ void destroyGraph(Graph* g);
 
 void printGraph(Graph *g);
 
+void printEdges(Graph *g);
+
 float hasEdge(Graph *g, int from, int to);
 
 void addEdge(Graph *g, int index, int from, int to, float value);

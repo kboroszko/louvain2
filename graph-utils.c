@@ -13,7 +13,11 @@ int compareEdges(const void * a, const void * b){
     } else if(edgeB->from > edgeA->from){
         return -1;
     } else {
-        return 0;
+        if(edgeA->to > edgeB->to){
+            return 1;
+        } else {
+            return -1;
+        }
     }
 }
 
@@ -72,19 +76,22 @@ Graph * initGraph(MData * data){
 
     sortEdges(g);
 
-//    int currVertice=0;
-//    for(int i=0; i<g->numEdges; i++){
-//        Edge e = g->edges[i];
-//        printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
-//        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
-//            printf("\tEND EDGES %d\n", currVertice);
-//            currVertice++;
-//        } else {
-//            printf("\n");
-//        }
-//    }
-
     return g;
+}
+
+void printEdges(Graph *g){
+
+    int currVertice=0;
+    for(int i=0; i<g->numEdges; i++){
+        Edge e = g->edges[i];
+        printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
+        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
+            printf("\tEND EDGES %d\n", currVertice);
+            currVertice++;
+        } else {
+            printf("\n");
+        }
+    }
 }
 
 

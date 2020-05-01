@@ -4,6 +4,7 @@
 
 #include "louvain.h"
 #include "graph-utils.h"
+#include <stdbool.h>
 
 float getKi(Graph *g, int vertice){
     float sum=0;
@@ -126,6 +127,57 @@ void phaseOne(Graph *g, int *cliques, float minimum){
     free(sigmaTot);
 }
 
+float changeEdges(Graph *g, const int *cliques, const int *mins){
+    for(int i=0; i<g->numEdges; i++){
+        Edge *e = g->edges + i;
+        int vertice = e->from;
+        int cliq = cliques[vertice];
+        int superVertice = mins[cliq];
+        if(vertice != superVertice) {
+            e->from = superVertice;
+        }
+        e->to = mins[cliques[e->to]];
+    }
+}
+
+
+void phaseTwo(Graph *g, int *cliques){
+    int *mins = (int*) malloc(g->size* sizeof(int)); //minimalny wierzchołek w klice
+    for(int i=0; i<g->size; i++){
+        mins[i] = -1;
+    }
+    for(int vertice=0; vertice < g->size; vertice++){
+        int cl = cliques[vertice];
+        if(mins[cl] == -1 || mins[cl] > vertice){
+            mins[cl] = vertice;
+        }
+    }
+
+    changeEdges(g, cliques, mins);
+
+    printf("\n------------------------------------------------------\n");
+    printEdges(g);
+    sortEdges(g);
+    printf("\n------------------------------------------------------\n");
+    printEdges(g);
+
+    for(int vertice=0; vertice<g->size; vertice++){
+        float sum = 0;
+        Edge *toSelf;
+        for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
+            Edge *e = g->edges + i;
+            if(e->from == e->to){
+                sum += e->value;
+                e->value = 0;
+                toSelf = e;
+            }
+        }
+        if(sum>0){
+            toSelf->value = sum;
+        }
+    }
+}
+
 
 int main(){
     printf("hello world\n");
@@ -142,6 +194,12 @@ int main(){
         cliques[i]=i;
     }
     phaseOne(g, cliques,0);
+
+    printEdges(g);
+
+    phaseTwo(g, cliques);
+
+    printEdges(g);
 
     destroyGraph(g);
 

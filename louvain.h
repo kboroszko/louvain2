@@ -18,4 +18,8 @@ void phaseOne(Graph *g, int *cliques, float minimum);
 
 void printAll(Graph*g, int* cliques);
 
+int moveValid(int from, int to, int* cliqueSizes);
+
+void phaseTwo(Graph *g, int *cliques);
+
 #endif //LOUVAIN2_LOUVAIN_H
