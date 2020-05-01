@@ -72,17 +72,17 @@ Graph * initGraph(MData * data){
 
     sortEdges(g);
 
-    int currVertice=0;
-    for(int i=0; i<g->numEdges; i++){
-        Edge e = g->edges[i];
-        printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
-        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
-            printf("\tEND EDGES %d\n", currVertice);
-            currVertice++;
-        } else {
-            printf("\n");
-        }
-    }
+//    int currVertice=0;
+//    for(int i=0; i<g->numEdges; i++){
+//        Edge e = g->edges[i];
+//        printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
+//        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
+//            printf("\tEND EDGES %d\n", currVertice);
+//            currVertice++;
+//        } else {
+//            printf("\n");
+//        }
+//    }
 
     return g;
 }
