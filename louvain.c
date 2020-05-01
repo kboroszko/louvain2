@@ -45,16 +45,31 @@ float dQ(Graph*g, int vertice, int *cliques, int in, float sigma, float m){
     return kiin/m - (ki * sigma)/(2 * m * m);
 }
 
-void phaseOne(Graph *g, int *cliques){
+void phaseOne(Graph *g, int *cliques, float minimum){
     int changed = 1;
+    int iters = 0;
+    float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
+    float m = 0;
+    for(int i=0; i < g->size; i++){
+        sigmaTot[i] = getKi(g, i);
+        m += sigmaTot[i];
+    }
     while(changed != 0){
         changed = 0;
-
+        iters++;
+        int* newCliques = (int*) malloc(sizeof(int) * g->size);
+        memcpy(newCliques, cliques, sizeof(int) * g->size);
         for(int vert=0; vert < g->size; g++){
-
+            int pretender = bestClique(g, vert, cliques);
+            if(pretender != -1){
+                float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot[pretender], m);
+                if(deltaQ > minimum){
+                    changed = 1;
+                    newCliques[vert] = pretender;
+                }
+            }
         }
-
-
+        memcpy(cliques, newCliques, sizeof(int) * g->size);
     }
 }
 

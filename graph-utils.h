@@ -7,7 +7,7 @@
 
 #include "mmio.h"
 
-#define EDGES_IDX(graph, vertice) ((vertice) > 0 ? (graph)->verticeLastEdgeExclusive[(vertice)] : 0)
+#define EDGES_IDX(graph, vertice) ((vertice) >= 0 ? (graph)->verticeLastEdgeExclusive[(vertice)] : 0)
 
 typedef struct{
     int from;

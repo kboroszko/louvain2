@@ -72,17 +72,17 @@ Graph * initGraph(MData * data){
 
     sortEdges(g);
 
-//    int currVertice=0;
-//    for(int i=0; i<g->numEdges; i++){
-//        Edge e = g->edges[i];
-//        printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
-//        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
-//            printf("\tEND EDGES %d\n", currVertice);
-//            currVertice++;
-//        } else {
-//            printf("\n");
-//        }
-//    }
+    int currVertice=0;
+    for(int i=0; i<g->numEdges; i++){
+        Edge e = g->edges[i];
+        printf("%d\t->\t%d\tw=%f", e.from, e.to, e.value);
+        if(i+1 == g->verticeLastEdgeExclusive[currVertice]){
+            printf("\tEND EDGES %d\n", currVertice);
+            currVertice++;
+        } else {
+            printf("\n");
+        }
+    }
 
     return g;
 }
@@ -100,10 +100,10 @@ float hasEdge(Graph *g, int from, int to){
 void printGraph(Graph *g){
     for(int i=0; i<g->size; i++){
         float val = hasEdge(g, i, 0);
-        printf("%2.2f", val >= 0 ? val : 0.f);
+        printf("%1.0f", val >= 0 ? val : 0.f);
         for(int j=1; j < g->size; j++){
             val = hasEdge(g, i, j);
-            printf(" %2.2f", val >= 0 ? val : 0.f);
+            printf(" %1.0f", val >= 0 ? val : 0.f);
         }
         printf("\n");
     }
