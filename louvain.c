@@ -177,6 +177,11 @@ void phaseTwo(Graph *g, int *cliques){
         sum += e->value;
         e->value = 0;
     }
+    if(sum > 0){
+        lastEdge->value = sum;
+    }
+
+    sortEdges(g);
 }
 
 
@@ -189,16 +194,6 @@ int main(){
     Graph *g = initGraph(dat);
     destroyMData(dat);
 
-//    printGraph(g);
-    int* cliques = (int*) malloc(sizeof(int) * g->size);
-    for(int i=0; i<g->size; i++){
-        cliques[i]=i;
-    }
-    phaseOne(g, cliques,0);
-
-//    printEdges(g);
-
-    phaseTwo(g, cliques);
 
 //    for(int i=0; i<g->size; i++){
 //        printf("%d\n", cliques[i]);
@@ -206,6 +201,23 @@ int main(){
 //    printEdges(g);
 
 
+    int* cliques = (int*) malloc(sizeof(int) * g->size);
+    for(int i=0; i<g->size; i++){
+        cliques[i]=i;
+    }
+
+    for(int iter=0; iter<5; iter++){
+        int* newCliques = (int*) malloc(sizeof(int) * g->size);
+        memcpy(newCliques, cliques, sizeof(int) * g->size);
+        phaseOne(g, newCliques,0);
+
+        printEdges(g);
+
+        phaseTwo(g, newCliques);
+        printf("========= PHASE 2 ==================\n");
+
+        printEdges(g);
+    }
 
     destroyGraph(g);
 

@@ -8,6 +8,14 @@
 int compareEdges(const void * a, const void * b){
     Edge * edgeA = (Edge*) a;
     Edge * edgeB = (Edge*) b;
+    if(edgeA->value == 0 || edgeB->value ==0){
+        if(edgeA->value != 0){
+            return -1;
+        } else if(edgeB->value != 0){
+            return 1;
+        }
+        return 0;
+    }
     if(edgeA->from > edgeB->from){
         return 1;
     } else if(edgeB->from > edgeA->from){
@@ -33,6 +41,12 @@ void sortEdges(Graph *g){
     int currVertice = 0;
     while(counter < g->numEdges && currVertice < g->size){
         Edge e = g->edges[counter];
+        if(e.value == 0){
+            g->verticeLastEdgeExclusive[currVertice] = counter;
+            currVertice++;
+            counter++;
+            break;
+        }
         if(e.from > currVertice){
             while(currVertice < e.from){
                 g->verticeLastEdgeExclusive[currVertice] = counter;
@@ -41,7 +55,9 @@ void sortEdges(Graph *g){
         }
         counter++;
     }
-    g->verticeLastEdgeExclusive[currVertice] = counter;
+    if(counter >= g->numEdges){
+        g->verticeLastEdgeExclusive[currVertice] = counter;
+    }
 }
 
 Graph * initGraph(MData * data){
