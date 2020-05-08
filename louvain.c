@@ -155,7 +155,13 @@ void phaseTwo(Graph *g, int *cliques){
 
     changeEdges(g, cliques, mins);
 
+//    printf("changed\n");
+//    printEdges(g);
+
     sortEdges(g);
+//    printf("sorted\n");
+
+//    printEdges(g);
 
     float sum=0;
     int from=0;
@@ -163,7 +169,7 @@ void phaseTwo(Graph *g, int *cliques){
     Edge *lastEdge = g->edges;
     for(int i=0; i<g->numEdges; i++){
         Edge *e = g->edges + i;
-        if(e->from > from || e->to > to){
+        if(e->from != from || e->to != to){
             if(e->from > from){
                 from = e->from;
             }
@@ -177,13 +183,25 @@ void phaseTwo(Graph *g, int *cliques){
         sum += e->value;
         e->value = 0;
     }
-    if(sum > 0){
-        lastEdge->value = sum;
-    }
 
     sortEdges(g);
 }
 
+void updateOldCliques(int size, int* oldCliques, int*newCliques){
+    for (int i = 0; i < size; ++i) {
+        int index = i;
+        while(newCliques[index] != index){
+            index = newCliques[index];
+        }
+        oldCliques[i] = index;
+    }
+}
+
+void printCliques(int size, int*cliques){
+    for (int i = 0; i < size; ++i) {
+        printf("%d\n", cliques[i]);
+    }
+}
 
 int main(){
     printf("hello world\n");
@@ -195,29 +213,33 @@ int main(){
     destroyMData(dat);
 
 
-//    for(int i=0; i<g->size; i++){
-//        printf("%d\n", cliques[i]);
-//    }
-//    printEdges(g);
-
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
     for(int i=0; i<g->size; i++){
         cliques[i]=i;
     }
 
+
+    int* newCliques = (int*) malloc(sizeof(int) * g->size);
+    memcpy(newCliques, cliques, sizeof(int) * g->size);
+
     for(int iter=0; iter<5; iter++){
-        int* newCliques = (int*) malloc(sizeof(int) * g->size);
-        memcpy(newCliques, cliques, sizeof(int) * g->size);
         phaseOne(g, newCliques,0);
 
-        printEdges(g);
+//        printEdges(g);
 
         phaseTwo(g, newCliques);
-        printf("========= PHASE 2 ==================\n");
+//        printf("========= PHASE 2 ==================\n");
 
-        printEdges(g);
+        for(int i=0; i<g->size; i++){
+            printf("%d -> %d\n", cliques[i], newCliques[i]);
+        }
+
+//        printEdges(g);
     }
+
+    updateOldCliques(g->size, cliques, newCliques);
+    printCliques(g->size, cliques);
 
     destroyGraph(g);
 
