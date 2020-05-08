@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 G = nx.Graph()
 
 file = "data/output.dat"
-weighted = False
+weighted = True
 cliques = []
 with open(file) as fp:
     line = fp.readline()

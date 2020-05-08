@@ -14,7 +14,7 @@ float getKiin(Graph *g, int vertice, int* cliques, int in );
 
 float dQ(Graph*g, int vertice, int *clliques, int in, float sigma, float m);
 
-void phaseOne(Graph *g, int *cliques, float minimum);
+int phaseOne(Graph *g, int *cliques, float minimum);
 
 void printAll(Graph*g, int* cliques);
 

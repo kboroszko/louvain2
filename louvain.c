@@ -74,7 +74,7 @@ void printAll(Graph*g, int* cliques){
     }
 }
 
-void phaseOne(Graph *g, int *cliques, float minimum){
+int phaseOne(Graph *g, int *cliques, float minimum){
     int changed = 1;
     int iters = 0;
     float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
@@ -85,6 +85,8 @@ void phaseOne(Graph *g, int *cliques, float minimum){
         sigmaTot[i] = getKi(g, i);
         m += sigmaTot[i];
     }
+
+    printf("m=%f\n", m);
     while(changed != 0){
 
         printf("iter - %d\n", iters);
@@ -125,6 +127,7 @@ void phaseOne(Graph *g, int *cliques, float minimum){
     }
 
     free(sigmaTot);
+    return iters;
 }
 
 float changeEdges(Graph *g, const int *cliques, const int *mins){
@@ -187,13 +190,19 @@ void phaseTwo(Graph *g, int *cliques){
     sortEdges(g);
 }
 
+void moveClique(int size, int* cliques, int from, int to){
+    for(int i=0; i<size; i++){
+        if(cliques[i] == from){
+            cliques[i] = to;
+        }
+    }
+}
+
 void updateOldCliques(int size, int* oldCliques, int*newCliques){
     for (int i = 0; i < size; ++i) {
-        int index = i;
-        while(newCliques[index] != index){
-            index = newCliques[index];
+        if(oldCliques[i] != newCliques[i]){
+            moveClique(size, oldCliques, oldCliques[i], newCliques[i]);
         }
-        oldCliques[i] = index;
     }
 }
 
@@ -206,7 +215,7 @@ void printCliques(int size, int*cliques){
 int main(){
     printf("hello world\n");
 
-    MData * dat = readData("mycielskian4.mtx");
+    MData * dat = readData("example.mtx");
     printData(dat);
 
     Graph *g = initGraph(dat);
@@ -219,27 +228,34 @@ int main(){
         cliques[i]=i;
     }
 
-
-    int* newCliques = (int*) malloc(sizeof(int) * g->size);
-    memcpy(newCliques, cliques, sizeof(int) * g->size);
-
     for(int iter=0; iter<5; iter++){
-        phaseOne(g, newCliques,0);
+        int* newCliques = (int*) malloc(sizeof(int) * g->size);
+        memcpy(newCliques, cliques, sizeof(int) * g->size);
 
-//        printEdges(g);
+        printf("========= PHASE 1 ==================\n");
+        int iter = phaseOne(g, newCliques,0);
+        if(iter == 1) {
+            printf("converged!\n");
+            break;
+        }
+        printEdges(g);
 
         phaseTwo(g, newCliques);
-//        printf("========= PHASE 2 ==================\n");
+        printf("========= PHASE 2 ==================\n");
 
         for(int i=0; i<g->size; i++){
             printf("%d -> %d\n", cliques[i], newCliques[i]);
         }
 
-//        printEdges(g);
-    }
+        printEdges(g);
 
-    updateOldCliques(g->size, cliques, newCliques);
+        updateOldCliques(g->size, cliques, newCliques);
+
+        free(newCliques);
+    }
     printCliques(g->size, cliques);
+
+    free(cliques);
 
     destroyGraph(g);
 
