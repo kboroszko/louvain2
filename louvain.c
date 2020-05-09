@@ -18,7 +18,7 @@ float getKiin(Graph *g, int vertice, int* cliques, int in ){
     float sum=0;
     for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
         Edge e = g->edges[i];
-        if(cliques[e.to] == in){
+        if(e.to != vertice && cliques[e.to] == in){
             sum+= e.value;
         }
     }
@@ -78,6 +78,17 @@ void printAll(Graph*g, int* cliques){
 //    printf("%%end of graph\n");
 }
 
+void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
+    for(int i=0; i < g->size; g++){
+        sigmaTot[i] = 0;
+    }
+    for(int i = 0; i < g->numEdges; i++){
+        Edge e = g->edges[i];
+        int cl = cliques[e.to];
+        sigmaTot[cl] += e.value;
+    }
+}
+
 int phaseOne(Graph *g, int *cliques, float minimum){
     int changed = 1;
     int iters = 0;
@@ -109,25 +120,15 @@ int phaseOne(Graph *g, int *cliques, float minimum){
                 if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
                     printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
                     changed = 1;
+                    int oldClique = cliques[vert];
                     newCliques[vert] = pretender;
+                    cliqueSizes[pretender] += 1;
+                    cliqueSizes[oldClique] -= 1;
                 }
             }
         }
-        //first update sigmaTot
-        for(int i=0; i<g->size; i++){
-            if(cliques[i] != newCliques[i]){
-                printf("moving %2d from %2d to %2d\n", i, cliques[i], newCliques[i] );
-                float ki = getKi(g, i);
-                float kiin = getKiin(g, i, cliques, newCliques[i]);
-                float kiinOld = getKiin(g, i, newCliques, cliques[i]);   // TODO tu jest błąd!
-                sigmaTot[newCliques[i]] += ki - kiin;
-                sigmaTot[cliques[i]] -= ki - kiinOld;
-                cliqueSizes[cliques[i]] -= 1;
-                cliqueSizes[newCliques[i]] += 1;
-            }
-        }
-        //update cliques
-        memcpy(cliques, newCliques, sizeof(int) * g->size);
+        recalcSigmaTot(g, sigmaTot, cliques);
+        memcpy(cliques, newCliques, g->size);
         //destroy newCliques
         free(newCliques);
 

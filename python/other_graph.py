@@ -101,3 +101,33 @@ net.set_options(options)
 
 
 net.show("mygraph.html")
+
+# import bs4
+#
+# # load the file
+# with open("mygraph.html") as inf:
+#     txt = inf.read()
+#     soup = bs4.BeautifulSoup(txt)
+#
+# # create new link
+# div = soup.new_tag("div")
+# # insert it into the document
+# div.append(soup.new_tag("textarea", id="MyTextarea"))
+# div.append(soup.new_tag("br"))
+# btn1 = soup.new_tag("button", onclick="clicked()")
+# btn1.string = "update"
+# div.append(btn1)
+# btn2 = soup.new_tag("button", id="prevBtn", onclick="clicked()")
+# btn2.string = "<"
+# div.append(btn2)
+# btn3 = soup.new_tag("button", id="forwBtn", onclick="clicked()")
+# btn3.string = ">"
+# div.append(btn3)
+# div.append(soup.new_tag("br"))
+# div.append(soup.new_tag("input", type="range", id="iterSlider", min="0", max="10"))
+# div.append(soup.new_tag("br"))
+#
+# soup.body.append(div)
+# # save the file again
+# with open("mygraph.html", "w") as outf:
+#     outf.write(str(soup))
