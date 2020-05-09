@@ -4,7 +4,6 @@
 
 #include "louvain.h"
 #include "graph-utils.h"
-#include <stdbool.h>
 
 float getKi(Graph *g, int vertice){
     float sum=0;
@@ -85,7 +84,6 @@ float modularity(Graph *g, int * cliques){
 float dQ(Graph*g, int vertice, int *cliques, int in, float sigma, float m){
     float kiin = getKiin(g, vertice, cliques, in);
     float ki = getKi(g, vertice);
-//    printf("kiin=%f\nki=%f\nsigma=%f\n", kiin, ki, sigma);
     return kiin/m - (ki * sigma)/(2 * m * m);
 }
 
@@ -93,25 +91,10 @@ int moveValid(int from, int to, int* cliqueSizes){
     if(from == to){
         return 0;
     }
-    if(cliqueSizes[from] != 1){
-        return 1;
-    }
-    if(cliqueSizes[to] > 1){
-        return 1;
-    }
-    if(from > to){
+    if(from > to || cliqueSizes[from] > 1 || cliqueSizes[to] > 1){
         return 1;
     }
     return 0;
-}
-
-void printAll(Graph*g, int* cliques){
-//    printf("%%graph:\n");
-//    printGraph(g);
-    for(int i=0; i<g->size; i++){
-        printf("%d\n", cliques[i]);
-    }
-//    printf("%%end of graph\n");
 }
 
 void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
@@ -131,7 +114,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
     }
 }
 
-int phaseOne(Graph *g, int *cliques, float minimum){
+int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int changed = 1;
     int iters = 0;
     float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
@@ -145,20 +128,9 @@ int phaseOne(Graph *g, int *cliques, float minimum){
     }
     m = m/2;
 
-    printf("m=%f\n", m);
-    printAll(g, cliques);
-//    recalcSigmaTot(g, sigmaTot, cliques);
-//    float mod = modularity(g, cliques);
-//    printf("modularity:%f\n", mod);
-//    printf("dq=%f\n", dQ(g, 2, cliques, 0, sigmaTot[0], m));
-//
-//    cliques[2] = 0;
-//    printf("modularity:%f\ngain:%f\n", modularity(g, cliques), modularity(g, cliques) - mod);
     float mod = modularity(g, cliques);
-    printf("modularity:%f\n", mod);
     while(changed != 0 && iters < 15){
-
-//        printf("---------------------------- iter %d ------------------------------------------\n", iters);
+        printf("---------------------------- iter %d ------------------------------------------\n", iters);
         printf("%f, \n", modularity(g, cliques));
         changed = 0;
         iters++;
@@ -178,18 +150,25 @@ int phaseOne(Graph *g, int *cliques, float minimum){
                 }
             }
         }
-        recalcSigmaTot(g, sigmaTot, cliques);
-        memcpy(cliques, newCliques, sizeof(int) * g->size);
-        //destroy newCliques
+        float newMod = modularity(g, newCliques);
+        if(newMod - mod > threshold){
+            memcpy(cliques, newCliques, sizeof(int) * g->size);
+            recalcSigmaTot(g, sigmaTot, cliques);
+            mod = newMod;
+        } else {
+            free(newCliques);
+            break;
+        }
         free(newCliques);
-
-//        printAll(g, cliques);
     }
 
     free(sigmaTot);
     return iters;
 }
 
+/**
+ * update all edges to go to and from superVertices aka cliques changed to vertices after phase2
+ */
 void changeEdges(Graph *g, const int *cliques, const int *mins){
     for(int i=0; i<g->numEdges; i++){
         Edge *e = g->edges + i;
@@ -215,9 +194,7 @@ void phaseTwo(Graph *g, int *cliques){
             mins[cl] = vertice;
         }
     }
-
     changeEdges(g, cliques, mins);
-
     sortEdges(g);
 
     float sum=0;
@@ -240,10 +217,16 @@ void phaseTwo(Graph *g, int *cliques){
         sum += e->value;
         e->value = 0;
     }
-
     sortEdges(g);
 }
 
+/**
+ * change all vertices in clique "from" to be in vertice "to"
+ * @param size
+ * @param cliques
+ * @param from
+ * @param to
+ */
 void moveClique(int size, int* cliques, int from, int to){
     for(int i=0; i<size; i++){
         if(cliques[i] == from){
@@ -252,6 +235,13 @@ void moveClique(int size, int* cliques, int from, int to){
     }
 }
 
+/**
+ * oldCliques represents vertice to clique mapping, this function updates it
+ * when a super vertice changed place
+ * @param size
+ * @param oldCliques
+ * @param newCliques
+ */
 void updateOldCliques(int size, int* oldCliques, int*newCliques){
     printf("changing cliques\n");
     for(int i=0; i<size; i++){
@@ -295,20 +285,16 @@ int main(){
         memcpy(newCliques, cliques, sizeof(int) * g->size);
 
         printf("========= PHASE 1 ==================\n");
-        int iter = phaseOne(g, newCliques,0);
+        int iter = phaseOne(g, newCliques,0.03f, 0.01f);
         if(iter == 1) {
             printf("converged!\n");
             break;
         }
-//        printEdges(g);
 
-        phaseTwo(g, newCliques);
         printf("========= PHASE 2 ==================\n");
-
-//        printEdges(g);
-
+        phaseTwo(g, newCliques);
+        printf("modularity:%f\n", modularity(g, cliques));
         updateOldCliques(g->size, cliques, newCliques);
-
         free(newCliques);
     }
     printCliques(g->size, cliques);
