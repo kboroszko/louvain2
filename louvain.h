@@ -24,7 +24,7 @@ float getKiin(Graph *g, int vertice, int* cliques, int in );
 
 int bestClique(Graph *g, int vertice, int *cliques, float*sigmaTots, float m);
 
-float dQ(Graph*g, int vertice, int *clliques, int in, float sigma, float m);
+float dQ(Graph*g, int vertice, int *clliques, int in, float* sigma, float m);
 
 int phaseOne(Graph *g, int *cliques, float minimum, float threshold);
 
