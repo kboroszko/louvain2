@@ -70,7 +70,7 @@ float modularity(Graph *g, int * cliques){
         float ki = getKi(g, i);
         int clique = cliques[i];
         ac[clique] += ki;
-        m += ki;
+        m += ki + selfLoop(g, i);
     }
     m = m/2.f;
 
@@ -167,15 +167,18 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int nMoves = g->numEdges;
     Move * moves = (Move*) calloc(sizeof(Move) , nMoves);
     int movesDone = 0;
-    printf("moves:%p\n", moves);
+//    printf("moves:%p\n", moves);
     float m = 0;
     for(int i=0; i < g->size; i++){
-        int c = cliques[i];
-        cliqueSizes[c] +=1;
-        m += getKi(g, i);
+        float ki = getKi(g, i);
+        if(ki > 0){
+            int c = cliques[i];
+            cliqueSizes[c] +=1;
+            m += ki + selfLoop(g, i);
+        }
     }
     m = m/2;
-
+//    printf("m=%f\n", m);
     recalcSigmaTot(g, sigmaTot, cliques);
 
 //    printf("sigmatot:\n");
@@ -185,11 +188,11 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
 //
     float mod = modularity(g, cliques);
-    printf("mod:%f\n", mod);
-    float dq = dQ(g, 10, cliques, 10, sigmaTot, m);
-    printf("dq=%f\n", dq);
-    cliques[10] = 10;
-    recalcSigmaTot(g, sigmaTot, cliques);
+//    printf("mod:%f\n", mod);
+//    float dq = dQ(g, 10, cliques, 10, sigmaTot, m);
+//    printf("dq=%f\n", dq);
+//    cliques[10] = 10;
+//    recalcSigmaTot(g, sigmaTot, cliques);
 
 //    printf("sigmatot:\n");
 //    for(int i=0; i<g->size; i++){
@@ -197,19 +200,18 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 //    }
 
 
-    float dq2 = dQ(g, 10, cliques, 9, sigmaTot, m);
-    printf("dq2=%f\n", dq2);
-
-    printf("mod:%f\n", modularity(g, cliques));
-    printf("delta:%f\n", modularity(g, cliques) - mod);
+//    float dq2 = dQ(g, 10, cliques, 9, sigmaTot, m);
+//    printf("dq2=%f\n", dq2);
+//
+//    printf("mod:%f\n", modularity(g, cliques));
+//    printf("delta:%f\n", modularity(g, cliques) - mod);
 
 
 
 
 
     while(changed != 0 ){
-        printf("---------------------------- iter %d ------------------------------------------\n", iters);
-        printf("%f, \n", modularity(g, cliques));
+//        printf("---------------------------- iter %d ------------------------------------------\n", iters);
         changed = 0;
         iters++;
         movesDone = 0;
@@ -218,7 +220,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             if(pretender != -1){
                 float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot, m);
                 if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
-                    printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
+//                    printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
                     changed = 1;
                     int oldClique = cliques[vert];
                     Move * m = moves + movesDone;
@@ -249,11 +251,15 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         }
 
 
-        if(movesDone > 0 ){
+        if(movesDone > 0){
+            float bestdQ = moves[0].gain;
             if (newMod - mod > threshold) {
                 memcpy(cliques, newCliques, sizeof(int) * g->size);
                 recalcSigmaTot(g, sigmaTot, cliques);
                 mod = newMod;
+                printf("%f, \n", modularity(g, cliques));
+            } else if(movesToApply == 1 && bestdQ < threshold){
+                changed = 0;
             }
         } else {
             changed = 0;
@@ -267,34 +273,46 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 }
 
 /**
- * update all edges to go to and from superVertices aka cliques changed to vertices after phase2
+ * update all edges to go to and from superVertices aka cliques changed to vertices in phase2
  */
-void changeEdges(Graph *g, const int *cliques, const int *mins){
+void changeEdges(Graph *g, const int *cliques){
     for(int i=0; i<g->numEdges; i++){
         Edge *e = g->edges + i;
         int vertice = e->from;
         int cliq = cliques[vertice];
-        int superVertice = mins[cliq];
+        int superVertice = cliq;
         if(vertice != superVertice) {
             e->from = superVertice;
         }
-        e->to = mins[cliques[e->to]];
+        e->to = cliques[e->to];
     }
 }
 
-
-void phaseTwo(Graph *g, int *cliques){
+void changeCliqueToMin(Graph *g, int*cliques){
     int *mins = (int*) malloc(g->size* sizeof(int)); //minimalny wierzchołek w klice
     for(int i=0; i<g->size; i++){
         mins[i] = -1;
     }
     for(int vertice=0; vertice < g->size; vertice++){
-        int cl = cliques[vertice];
-        if(mins[cl] == -1 || mins[cl] > vertice){
-            mins[cl] = vertice;
+        if(verticeHasEdges(g, vertice)){
+            int cl = cliques[vertice];
+            if(mins[cl] == -1 || mins[cl] > vertice){
+                mins[cl] = vertice;
+            }
         }
     }
-    changeEdges(g, cliques, mins);
+    for(int i=0; i<g->size; i++){
+        int cl = cliques[i];
+        if(mins[cl] != -1){
+            cliques[i] = mins[cl];
+        }
+    }
+    free(mins);
+}
+
+void phaseTwo(Graph *g, int *cliques){
+    changeCliqueToMin(g, cliques);
+    changeEdges(g, cliques);
     sortEdges(g);
 
     float sum=0;
@@ -310,6 +328,9 @@ void phaseTwo(Graph *g, int *cliques){
             }
             to = e->to;
             if(sum > 0){
+                if(lastEdge->from == lastEdge->to){
+                    sum = sum / 2.f;
+                }
                 lastEdge->value = sum;
             }
             sum = 0;
@@ -319,22 +340,6 @@ void phaseTwo(Graph *g, int *cliques){
         e->value = 0;
     }
     sortEdges(g);
-    free(mins);
-}
-
-/**
- * change all vertices in clique "from" to be in vertice "to"
- * @param size
- * @param cliques
- * @param from
- * @param to
- */
-void moveClique(int size, int* cliques, int from, int to){
-    for(int i=0; i<size; i++){
-        if(cliques[i] == from){
-            cliques[i] = to;
-        }
-    }
 }
 
 /**
@@ -344,22 +349,24 @@ void moveClique(int size, int* cliques, int from, int to){
  * @param oldCliques
  * @param newCliques
  */
-void updateOldCliques(int size, int* oldCliques, int*newCliques){
-//    printf("changing cliques\n");
-//    for(int i=0; i<size; i++){
-//        printf("%d -> %d\n", oldCliques[i], newCliques[i]);
-//    }
-
-    for (int i = 0; i < size; ++i) {
-        if(oldCliques[i] != newCliques[i]){
-            moveClique(size, oldCliques, oldCliques[i], newCliques[i]);
+void updateOldCliques(Graph *g, int* cliques){
+    for(int i=0; i<g->size; i++){
+        int index = cliques[i];
+        while(index != cliques[index]){
+            index = cliques[index];
+        }
+        if(cliques[i] != index){
+//            printf("CHANGED CLIQUE FOR %d FROM %d TO %d\n", i, cliques[i], index);
+            cliques[i] = index;
         }
     }
+
 }
 
 void printCliques(int size, int*cliques){
     for (int i = 0; i < size; ++i) {
-        printf("cliques[%d]=%d;\n", i, cliques[i]);
+//        printf("cliques[%d]=%d;\n", i, cliques[i]);
+        printf("%d\n", cliques[i]);
     }
 }
 
@@ -379,45 +386,46 @@ int main(){
         cliques[i]=i;
     }
 
-    cliques[0]=0;
-    cliques[1]=1;
-    cliques[2]=1;
-    cliques[3]=0;
-    cliques[4]=1;
-    cliques[5]=0;
-    cliques[6]=6;
-    cliques[7]=0;
-    cliques[8]=9;
-    cliques[9]=9;
-    cliques[10]=9;
-    cliques[11]=10;
-    cliques[12]=9;
-    cliques[13]=10;
-    cliques[14]=9;
-    cliques[15]=8;
+//    cliques[0]=0;
+//    cliques[1]=1;
+//    cliques[2]=1;
+//    cliques[3]=0;
+//    cliques[4]=1;
+//    cliques[5]=0;
+//    cliques[6]=6;
+//    cliques[7]=0;
+//    cliques[8]=9;
+//    cliques[9]=9;
+//    cliques[10]=9;
+//    cliques[11]=10;
+//    cliques[12]=9;
+//    cliques[13]=10;
+//    cliques[14]=9;
+//    cliques[15]=8;
 
+    int bigLoopIteration = 0;
 
     float mod = modularity(g, cliques);
-    printf("modularity:%f\n", mod);
+//    printf("modularity:%f\n", mod);
+    int iter = 10;
+    while(iter > 1){
 
-    for(int iter=0; iter<5; iter++){
-        int* newCliques = (int*) malloc(sizeof(int) * g->size);
-        memcpy(newCliques, cliques, sizeof(int) * g->size);
+//        printf("========= PHASE 1 ==================\n");
+        float minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
+        minimum = minimum < 0 ? 0.f : minimum;
+//        printf("min:%f\n", minimum);
+        iter = phaseOne(g, cliques, minimum, 0.0f);
 
-        printf("========= PHASE 1 ==================\n");
-        int iter = phaseOne(g, newCliques,0.f, 0.0f);
-        if(iter == 1) {
-            printf("converged!\n");
-            free(newCliques);
-            break;
-        }
+//        printCliques(g->size, cliques);
 
-        printf("========= PHASE 2 ==================\n");
-        phaseTwo(g, newCliques);
-        printf("modularity:%f\n", modularity(g, cliques));
-        updateOldCliques(g->size, cliques, newCliques);
-        free(newCliques);
+//        printf("========= PHASE 2 ==================\n");
+        phaseTwo(g, cliques);
+//        printf("modularity:%f\n", modularity(g, cliques));
+//        printEdges(g);
+        updateOldCliques(g, cliques);
+//        printCliques(g->size, cliques);
     }
+    printf("converged!\n");
     printCliques(g->size, cliques);
 
     free(cliques);
