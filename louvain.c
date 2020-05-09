@@ -46,45 +46,49 @@ int bestClique(Graph *g, int vertice, int *cliques, float*sigmaTots, float m){
     return bestClique;
 }
 
-float edgeValue(Graph *g, int from, int to){
-    for(int k=EDGES_IDX(g,from-1); k<EDGES_IDX(g,from); k++){
-        Edge e = g->edges[k];
-        if(e.to == to){
-            return e.value;
-        }
-    }
-    return 0.0f;
-}
+//float edgeValue(Graph *g, int from, int to){
+//    for(int k=EDGES_IDX(g,from-1); k<EDGES_IDX(g,from); k++){
+//        Edge e = g->edges[k];
+//        if(e.to == to){
+//            return e.value;
+//        }
+//    }
+//    return 0.0f;
+//}
 
 int verticeHasEdges(Graph *g, int vertice){
-    return EDGES_IDX(g, vertice-1) != EDGES_IDX(g, vertice);
+    int has = EDGES_IDX(g, vertice-1) != EDGES_IDX(g, vertice);
+    return has;
 }
 
 float modularity(Graph *g, int * cliques){
     float sum = 0;
-    float * kis = (float*) malloc(sizeof(float) * g->size);
     float m = 0;
+    float * ac = (float*) calloc(sizeof(float), g->size);
+
     for(int i=0; i<g->size; i++){
         float ki = getKi(g, i);
-        kis[i] = ki;
+        int clique = cliques[i];
+        ac[clique] += ki;
         m += ki;
     }
-    m = m/2;
+    m = m/2.f;
+
+
+    for(int i=0; i<g->size; i++){
+        sum += ac[i] * ac[i];
+    }
+    sum = -sum/(2.f * m);
+
     for(int i=0; i < g->size; i++){
-        if(verticeHasEdges(g, i)){
-            float kii = kis[i];
-            for(int j=0; j < g->size; j++){
-                int cli = cliques[i];
-                int clj = cliques[j];
-                if(cli == clj){
-                    float kij = kis[j];
-                    float aij = edgeValue(g, i, j);
-                    sum += aij - kii * kij / (2.f*m) ;
-                }
+        for(int k=EDGES_IDX(g,i-1); k<EDGES_IDX(g,k); k++){
+            Edge e = g->edges[k];
+            if(cliques[e.from] == cliques[e.to]){
+                sum += e.value;
             }
         }
     }
-    free(kis);
+    free(ac);
     return sum/(2.f*m);
 }
 
@@ -106,7 +110,7 @@ void applyBestMoves(int* cliques, Move* moves ,int nMoves, int nBest){
     }
     assert(nMoves >= nBest);
     if(nMoves != nBest){
-//        qsort(moves, nMoves, sizeof(Move), compareMoves);
+        qsort(moves, nMoves, sizeof(Move), compareMoves);
     }
     for(int i=0; i < nBest; i++){
         Move m = moves[i];
@@ -122,6 +126,8 @@ float previewModularity(Graph * g, int*newCliques, Move* moves, int nMoves, int 
 
 float dQ(Graph*g, int vertice, int *cliques, int in, float sigma, float m){
     float kiin = getKiin(g, vertice, cliques, in);
+    float EiwCiBezi = getKiin(g, vertice, cliques, cliques[vertice]);
+
     float ki = getKi(g, vertice);
     return kiin/m - (ki * sigma)/(2 * m * m);
 }
@@ -156,7 +162,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 int calculateMovesToApply(int iters, int movesDone, int nMoves){
     int ret = movesDone;
     for(int i=1; i< iters; i++){
-        ret = ret + 1/ 2;
+        ret = (ret + 1)/ 2;
     }
     return ret > 0 ? ret : 1;
 }
@@ -166,7 +172,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int iters = 0;
     float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
     int* cliqueSizes = (int*) calloc(sizeof(int), g->size);
-    int nMoves = g->numEdges; //TODO this should be dependent on num of vertices in graph
+    int nMoves = g->numEdges;
     Move * moves = (Move*) calloc(sizeof(Move) , nMoves);
     int movesDone = 0;
     printf("moves:%p\n", moves);
@@ -179,12 +185,43 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     }
     m = m/2;
 
+    recalcSigmaTot(g, sigmaTot, cliques);
+
+//    printf("sigmatot:\n");
+//    for(int i=0; i<g->size; i++){
+//        printf("%f\n", sigmaTot[i]);
+//    }
+
+//
     float mod = modularity(g, cliques);
+    printf("mod:%f\n", mod);
+    float dq = dQ(g, 0, cliques, 1, sigmaTot[1], m);
+    printf("dq=%f\n", dq);
+    cliques[0] = 1;
+    recalcSigmaTot(g, sigmaTot, cliques);
+
+//    printf("sigmatot:\n");
+//    for(int i=0; i<g->size; i++){
+//        printf("%f\n", sigmaTot[i]);
+//    }
+
+
+    float dq2 = dQ(g, 0, cliques, 0, sigmaTot[0], m);
+    printf("dq2=%f\n", dq2);
+
+    printf("mod:%f\n", modularity(g, cliques));
+    printf("delta:%f\n", modularity(g, cliques) - mod);
+
+
+
+
+
     while(changed != 0 ){
         printf("---------------------------- iter %d ------------------------------------------\n", iters);
         printf("%f, \n", modularity(g, cliques));
         changed = 0;
         iters++;
+        movesDone = 0;
         for(int vert=0; vert < g->size; vert++){
             int pretender = bestClique(g, vert, cliques, sigmaTot,m);
             if(pretender != -1){
@@ -221,13 +258,14 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         }
 
 
-        if(newMod - mod > threshold){
-            memcpy(cliques, newCliques, sizeof(int) * g->size);
-            recalcSigmaTot(g, sigmaTot, cliques);
-            mod = newMod;
+        if(movesDone > 0 ){
+            if (newMod - mod > threshold) {
+                memcpy(cliques, newCliques, sizeof(int) * g->size);
+                recalcSigmaTot(g, sigmaTot, cliques);
+                mod = newMod;
+            }
         } else {
-            free(newCliques);
-            break;
+            changed = 0;
         }
         free(newCliques);
     }
@@ -349,6 +387,23 @@ int main(){
     for(int i=0; i<g->size; i++){
         cliques[i]=i;
     }
+
+//    cliques[0]=0;
+//    cliques[1]=1;
+//    cliques[2]=0;
+//    cliques[3]=1;
+//    cliques[4]=0;
+//    cliques[5]=0;
+//    cliques[6]=6;
+//    cliques[7]=0;
+//    cliques[8]=9;
+//    cliques[9]=9;
+//    cliques[10]=9;
+//    cliques[11]=10;
+//    cliques[12]=9;
+//    cliques[13]=10;
+//    cliques[14]=9;
+//    cliques[15]=8;
 
 
     float mod = modularity(g, cliques);

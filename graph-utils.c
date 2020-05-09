@@ -59,6 +59,8 @@ void sortEdges(Graph *g){
     }
     if(counter >= g->numEdges){
         g->verticeLastEdgeExclusive[currVertice] = counter;
+    } else {
+        g->numEdges = counter;
     }
 }
 
