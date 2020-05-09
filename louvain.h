@@ -7,6 +7,16 @@
 #ifndef LOUVAIN2_LOUVAIN_H
 #define LOUVAIN2_LOUVAIN_H
 
+#ifndef DEBUG
+#define DEBUG 1 //TODO
+#endif
+
+typedef struct {
+    int vertice;
+    int toClique;
+    float gain;
+} Move;
+
 
 float getKi(Graph *g, int vertice);
 
