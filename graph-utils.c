@@ -80,9 +80,9 @@ Graph * initGraph(MData * data){
     }
     edges += data->rows;
 
-    Graph *g = malloc(sizeof(Graph));
-    g->verticeLastEdgeExclusive = (int*) malloc(sizeof(int) * data->rows);
-    g->edges = (Edge*) malloc(sizeof(Edge) * edges);
+    Graph *g = calloc(sizeof(Graph), 1);
+    g->verticeLastEdgeExclusive = (int*) calloc(sizeof(int), data->rows);
+    g->edges = (Edge*) calloc(sizeof(Edge), edges);
     g->numEdges = edges;
     g->size = data->rows;
 

@@ -106,7 +106,7 @@ void applyBestMoves(int* cliques, Move* moves ,int nMoves, int nBest){
     }
     assert(nMoves >= nBest);
     if(nMoves != nBest){
-        qsort(moves, nMoves, sizeof(Move), compareMoves);
+//        qsort(moves, nMoves, sizeof(Move), compareMoves);
     }
     for(int i=0; i < nBest; i++){
         Move m = moves[i];
@@ -141,14 +141,14 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
         sigmaTot[i] = 0;
     }
     for(int i = 0; i < g->numEdges; i++){
-        Edge e = g->edges[i];
-        int clTo = cliques[e.to];
-        int clFrom = cliques[e.from];
+        Edge* e = g->edges + i;
+        int clTo = cliques[e->to];
+        int clFrom = cliques[e->from];
         if(clTo == clFrom){
-            sigmaTot[clTo] += e.value / 2.f;
+            sigmaTot[clTo] += e->value / 2.f;
         } else {
-            sigmaTot[clTo] += e.value / 2.f;
-            sigmaTot[clFrom] += e.value/2.f;
+            sigmaTot[clTo] += e->value / 2.f;
+            sigmaTot[clFrom] += e->value/2.f;
         }
     }
 }
@@ -166,9 +166,10 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int iters = 0;
     float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
     int* cliqueSizes = (int*) calloc(sizeof(int), g->size);
-    int nMoves = g->size; //TODO this should be dependent on num of vertices in graph
+    int nMoves = g->numEdges; //TODO this should be dependent on num of vertices in graph
+    Move * moves = (Move*) calloc(sizeof(Move) , nMoves);
     int movesDone = 0;
-    Move * moves = (Move*) malloc(sizeof(Move) * nMoves);
+    printf("moves:%p\n", moves);
     float m = 0;
     for(int i=0; i < g->size; i++){
         int c = cliques[i];
@@ -192,7 +193,11 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
                     printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
                     changed = 1;
                     int oldClique = cliques[vert];
-                    moves[movesDone++] = (Move) {.vertice = vert, .toClique=pretender, .gain=deltaQ};
+                    Move * m = moves + movesDone;
+                    m->vertice = vert;
+                    m->gain = deltaQ;
+                    m->toClique = pretender;
+                    movesDone++;
                     cliqueSizes[pretender] += 1;
                     cliqueSizes[oldClique] -= 1;
                 }
@@ -226,6 +231,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         }
         free(newCliques);
     }
+    free(cliqueSizes);
     free(moves);
     free(sigmaTot);
     return iters;
@@ -284,6 +290,7 @@ void phaseTwo(Graph *g, int *cliques){
         e->value = 0;
     }
     sortEdges(g);
+    free(mins);
 }
 
 /**
@@ -355,6 +362,7 @@ int main(){
         int iter = phaseOne(g, newCliques,0.f, 0.0f);
         if(iter == 1) {
             printf("converged!\n");
+            free(newCliques);
             break;
         }
 
