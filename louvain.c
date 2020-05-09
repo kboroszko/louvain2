@@ -64,7 +64,7 @@ int verticeHasEdges(Graph *g, int vertice){
 float modularity(Graph *g, int * cliques){
     float sum = 0;
     float m = 0;
-    float * ac = (float*) calloc(sizeof(float), g->size);
+    float * ac = (float*) calloc(g->size, sizeof(float));
 
     for(int i=0; i<g->size; i++){
         float ki = getKi(g, i);
@@ -163,9 +163,9 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int changed = 1;
     int iters = 0;
     float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
-    int* cliqueSizes = (int*) calloc(sizeof(int), g->size);
+    int* cliqueSizes = (int*) calloc(g->size, sizeof(int));
     int nMoves = g->numEdges;
-    Move * moves = (Move*) calloc(sizeof(Move) , nMoves);
+    Move * moves = (Move*) calloc(nMoves, sizeof(Move));
     int movesDone = 0;
 //    printf("moves:%p\n", moves);
     float m = 0;
@@ -220,7 +220,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             if(pretender != -1){
                 float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot, m);
                 if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
-                    printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
+//                    printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
                     changed = 1;
                     int oldClique = cliques[vert];
                     Move * m = moves + movesDone;
@@ -370,7 +370,7 @@ void printCliques(int size, int*cliques){
 int main(){
     printf("hello world\n");
 
-    MData * dat = readData("miserables.mtx");
+    MData * dat = readData("494_bus.mtx");
     printData(dat);
 
     Graph *g = initGraph(dat);
@@ -406,11 +406,11 @@ int main(){
     float threshold = 0.f;
 
     float mod = modularity(g, cliques);
-//    printf("modularity:%f\n", mod);
+    printf("modularity:%f\n", mod);
     int iter = 10;
     while(iter > 1 || minimum > 0.00001f){
 
-        printf("========= PHASE 1 ==================\n");
+//        printf("========= PHASE 1 ==================\n");
         minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
         minimum = minimum < 0 ? 0.f : minimum;
 //        printf("min:%f\n", minimum);
@@ -418,11 +418,11 @@ int main(){
 
 //        printCliques(g->size, cliques);
 
-        printf("========= PHASE 2 ==================\n");
+//        printf("========= PHASE 2 ==================\n");
         phaseTwo(g, cliques);
 //        printEdges(g);
         updateOldCliques(g, cliques);
-        printf("modularity:%f\n", modularity(g, cliques));
+//        printf("modularity:%f\n", modularity(g, cliques));
 //        printCliques(g->size, cliques);
         bigLoopIteration += 1;
     }

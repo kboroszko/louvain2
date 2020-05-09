@@ -57,7 +57,7 @@ void sortEdges(Graph *g){
         }
         counter++;
     }
-    if(counter >= g->numEdges){
+    if(counter >= g->numEdges && currVertice < g->size){
         g->verticeLastEdgeExclusive[currVertice] = counter;
     } else {
         g->numEdges = counter;
@@ -76,15 +76,15 @@ Graph * initGraph(MData * data){
             }
         }
     }
-    int edges = (data->size - onDiagonal);
+    int edges = (data->size);
     if(data->format.symmetry == SYMMETRIC || data->format.symmetry == SKEW){
         edges = edges * 2;
     }
     edges += data->rows;
 
-    Graph *g = calloc(sizeof(Graph), 1);
-    g->verticeLastEdgeExclusive = (int*) calloc(sizeof(int), data->rows);
-    g->edges = (Edge*) calloc(sizeof(Edge), edges);
+    Graph *g = calloc(1, sizeof(Graph));
+    g->verticeLastEdgeExclusive = (int*) calloc(data->rows, sizeof(int));
+    g->edges = (Edge*) calloc(edges, sizeof(Edge));
     g->numEdges = edges;
     g->size = data->rows;
 
