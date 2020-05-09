@@ -31,7 +31,7 @@ int bestClique(Graph *g, int vertice, int *cliques, float*sigmaTots, float m){
     for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
         int to = g->edges[i].to;
         int in = cliques[to];
-        if(in != cliques[vertice]){
+        if(in != bestClique && in != cliques[vertice]){
             float deltaQ = dQ(g, vertice, cliques, in, sigmaTots[in], m);
             if(deltaQ > best){
                 best = deltaQ;
@@ -46,6 +46,16 @@ int bestClique(Graph *g, int vertice, int *cliques, float*sigmaTots, float m){
     return bestClique;
 }
 
+float edgeValue(Graph *g, int from, int to){
+    for(int k=EDGES_IDX(g,from-1); k<EDGES_IDX(g,from); k++){
+        Edge e = g->edges[k];
+        if(e.to == to){
+            return e.value;
+        }
+    }
+    return 0.0f;
+}
+
 float modularity(Graph *g, int * cliques){
     float sum = 0;
     float * kis = (float*) malloc(sizeof(float) * g->size);
@@ -55,12 +65,17 @@ float modularity(Graph *g, int * cliques){
         kis[i] = ki;
         m += ki;
     }
-    for(int i=0; i<g->numEdges; i++){
-        Edge * e = g->edges + i;
-        if(e->from == e->to){
-            float kiFrom = kis[e->from];
-            float kiTo = kis[e->to];
-            sum += e->value  - kiFrom * kiTo / (2.f * m);
+    m = m/2;
+    for(int i=0; i < g->size; i++){
+        float kii = kis[i];
+        for(int j=0; j < g->size; j++){
+            int cli = cliques[i];
+            int clj = cliques[j];
+            if(cli == clj){
+                float kij = kis[j];
+                float aij = edgeValue(g, i, j);
+                sum += aij - kii * kij / (2.f*m) ;
+            }
         }
     }
     free(kis);
@@ -70,7 +85,7 @@ float modularity(Graph *g, int * cliques){
 float dQ(Graph*g, int vertice, int *cliques, int in, float sigma, float m){
     float kiin = getKiin(g, vertice, cliques, in);
     float ki = getKi(g, vertice);
-    printf("kiin=%f\nki=%f\nsigma=%f\n", kiin, ki, sigma);
+//    printf("kiin=%f\nki=%f\nsigma=%f\n", kiin, ki, sigma);
     return kiin/m - (ki * sigma)/(2 * m * m);
 }
 
@@ -132,14 +147,19 @@ int phaseOne(Graph *g, int *cliques, float minimum){
 
     printf("m=%f\n", m);
     printAll(g, cliques);
-    recalcSigmaTot(g, sigmaTot, cliques);
+//    recalcSigmaTot(g, sigmaTot, cliques);
+//    float mod = modularity(g, cliques);
+//    printf("modularity:%f\n", mod);
+//    printf("dq=%f\n", dQ(g, 2, cliques, 0, sigmaTot[0], m));
+//
+//    cliques[2] = 0;
+//    printf("modularity:%f\ngain:%f\n", modularity(g, cliques), modularity(g, cliques) - mod);
+    float mod = modularity(g, cliques);
+    printf("modularity:%f\n", mod);
+    while(changed != 0 && iters < 15){
 
-    printf("dq=%f\n", dQ(g, 1, cliques, 0, sigmaTot[0], m));
-
-    while(changed != 0){
-
-        printf("---------------------------- iter %d ------------------------------------------\n", iters);
-
+//        printf("---------------------------- iter %d ------------------------------------------\n", iters);
+        printf("%f, \n", modularity(g, cliques));
         changed = 0;
         iters++;
         int* newCliques = (int*) malloc(sizeof(int) * g->size);
@@ -149,7 +169,7 @@ int phaseOne(Graph *g, int *cliques, float minimum){
             if(pretender != -1){
                 float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot[pretender], m);
                 if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
-                    printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
+//                    printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
                     changed = 1;
                     int oldClique = cliques[vert];
                     newCliques[vert] = pretender;
@@ -159,18 +179,18 @@ int phaseOne(Graph *g, int *cliques, float minimum){
             }
         }
         recalcSigmaTot(g, sigmaTot, cliques);
-        memcpy(cliques, newCliques, g->size);
+        memcpy(cliques, newCliques, sizeof(int) * g->size);
         //destroy newCliques
         free(newCliques);
 
-        printAll(g, cliques);
+//        printAll(g, cliques);
     }
 
     free(sigmaTot);
     return iters;
 }
 
-float changeEdges(Graph *g, const int *cliques, const int *mins){
+void changeEdges(Graph *g, const int *cliques, const int *mins){
     for(int i=0; i<g->numEdges; i++){
         Edge *e = g->edges + i;
         int vertice = e->from;
@@ -264,7 +284,7 @@ int main(){
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
     for(int i=0; i<g->size; i++){
-        cliques[i]=i%2;
+        cliques[i]=i;
     }
 
     float mod = modularity(g, cliques);
