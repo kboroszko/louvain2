@@ -370,8 +370,8 @@ void printCliques(int size, int*cliques){
 int main(){
     printf("hello world\n");
 
-    MData * dat = readData("494_bus.mtx");
-    printData(dat);
+    MData * dat = readData("wing_nodal.mtx");
+//    printData(dat);
 
     Graph *g = initGraph(dat);
     destroyMData(dat);
@@ -408,7 +408,7 @@ int main(){
     float mod = modularity(g, cliques);
     printf("modularity:%f\n", mod);
     int iter = 10;
-    while(iter > 1 || minimum > 0.00001f){
+    while(iter > 1 || minimum > 0.000001f){
 
 //        printf("========= PHASE 1 ==================\n");
         minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
