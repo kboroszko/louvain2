@@ -50,6 +50,11 @@ def set_node_size(net, node_id, size):
 
 srcs, dests, vals, cliques, n = readData(file)
 
+print("edgelist=[", end='')
+for src, dest, val in zip(srcs, dests, vals) :
+    print("({0},{1},{2}), ".format(int(src), int(dest), float(val)), end='')
+print(']')
+
 edges = len(vals)
 print("found ", n, "nodes and", edges, "edges")
 

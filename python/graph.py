@@ -13,6 +13,8 @@ graph = karate_club(metadata=True)
 adjacency = graph.adjacency
 position = graph.position
 
+svg_gr
+
 print(adjacency)
 print(position)
 

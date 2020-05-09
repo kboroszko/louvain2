@@ -46,10 +46,31 @@ int bestClique(Graph *g, int vertice, int *cliques, float*sigmaTots, float m){
     return bestClique;
 }
 
+float modularity(Graph *g, int * cliques){
+    float sum = 0;
+    float * kis = (float*) malloc(sizeof(float) * g->size);
+    float m = 0;
+    for(int i=0; i<g->size; i++){
+        float ki = getKi(g, i);
+        kis[i] = ki;
+        m += ki;
+    }
+    for(int i=0; i<g->numEdges; i++){
+        Edge * e = g->edges + i;
+        if(e->from == e->to){
+            float kiFrom = kis[e->from];
+            float kiTo = kis[e->to];
+            sum += e->value  - kiFrom * kiTo / (2.f * m);
+        }
+    }
+    free(kis);
+    return sum/(2.f*m);
+}
+
 float dQ(Graph*g, int vertice, int *cliques, int in, float sigma, float m){
     float kiin = getKiin(g, vertice, cliques, in);
     float ki = getKi(g, vertice);
-
+    printf("kiin=%f\nki=%f\nsigma=%f\n", kiin, ki, sigma);
     return kiin/m - (ki * sigma)/(2 * m * m);
 }
 
@@ -79,13 +100,19 @@ void printAll(Graph*g, int* cliques){
 }
 
 void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
-    for(int i=0; i < g->size; g++){
+    for(int i=0; i < g->size; i++){
         sigmaTot[i] = 0;
     }
     for(int i = 0; i < g->numEdges; i++){
         Edge e = g->edges[i];
-        int cl = cliques[e.to];
-        sigmaTot[cl] += e.value;
+        int clTo = cliques[e.to];
+        int clFrom = cliques[e.from];
+        if(clTo == clFrom){
+            sigmaTot[clTo] += e.value / 2.f;
+        } else {
+            sigmaTot[clTo] += e.value / 2.f;
+            sigmaTot[clFrom] += e.value/2.f;
+        }
     }
 }
 
@@ -105,6 +132,10 @@ int phaseOne(Graph *g, int *cliques, float minimum){
 
     printf("m=%f\n", m);
     printAll(g, cliques);
+    recalcSigmaTot(g, sigmaTot, cliques);
+
+    printf("dq=%f\n", dQ(g, 1, cliques, 0, sigmaTot[0], m));
+
     while(changed != 0){
 
         printf("---------------------------- iter %d ------------------------------------------\n", iters);
@@ -233,8 +264,11 @@ int main(){
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
     for(int i=0; i<g->size; i++){
-        cliques[i]=i;
+        cliques[i]=i%2;
     }
+
+    float mod = modularity(g, cliques);
+    printf("modularity:%f\n", mod);
 
     for(int iter=0; iter<5; iter++){
         int* newCliques = (int*) malloc(sizeof(int) * g->size);
