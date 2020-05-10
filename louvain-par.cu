@@ -169,8 +169,11 @@ void copyGraphToDevice(Graph*g, Graph**deviceGraph){
     HANDLE_ERROR(cudaMalloc((void**)deviceGraph, sizeof(Graph)));
     HANDLE_ERROR(cudaMemcpy((void**)deviceGraph, (void*)g, sizeof(Graph), cudaMemcpyHostToDevice));
 
-    HANDLE_ERROR(cudaMalloc((void**)&(deviceGraph->edges), sizeof(Edge) * g->numEdges));
-    HANDLE_ERROR(cudaMalloc((void**)&(deviceGraph->verticeLastEdgeExclusive), sizeof(int) * g->size));
+    Edge ** edgesPtr = &((**deviceGraph).edges);
+    int ** vertPtr = &((**deviceGraph).verticeLastEdgeExclusive);
+
+    HANDLE_ERROR(cudaMalloc((void**) edgesPtr, sizeof(Edge) * g->numEdges));
+    HANDLE_ERROR(cudaMalloc((void**) vertPtr, sizeof(int) * g->size));
 
     thrust::copy(g->edges, g->edges + g->numEdges, deviceGraph->edges);
     thrust::copy(g->verticeLastEdgeExclusive, g->verticeLastEdgeExclusive + g->size, deviceGraph->size);
