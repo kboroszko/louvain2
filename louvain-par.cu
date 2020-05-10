@@ -10,6 +10,7 @@ extern "C" {
 #include "errors.h"
 #include <thrust/fill.h>
 #include <thrust/copy.h>
+#include <thrust/device_vector.h>
 
 //__device__ float atomicAdd(float* address, float val)
 //{
