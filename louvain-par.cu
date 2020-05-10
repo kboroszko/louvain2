@@ -213,7 +213,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             }
         }
         if(DEBUG){
-            int* newCliques = malloc(sizeof(int) * g->size);
+            int* newCliques = (int*) malloc(sizeof(int) * g->size);
             memcpy(newCliques, cliques, sizeof(int) * g->size);
             float newMod = previewModularity(g, newCliques, moves, movesDone, movesDone, 0);
             printf("modularity gain if all applied=%f\n", newMod - mod);
@@ -221,7 +221,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         }
         int movesToApply = calculateMovesToApply(1, movesDone, nMoves);
 
-        int* newCliques = malloc(sizeof(int) * g->size);
+        int* newCliques = (int*) malloc(sizeof(int) * g->size);
         memcpy(newCliques, cliques, sizeof(int) * g->size);
         float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
 
