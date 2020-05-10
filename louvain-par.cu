@@ -317,7 +317,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     thrust::fill(deviceCliqueSizes_ptr, deviceCliqueSizes_ptr + g->size, (int) 0);
 
     int nMoves = g->size;
-    thrust::device_vector<Move> deviceMoves(nMoves, 0);
+    thrust::device_vector<Move> deviceMoves(nMoves);
 
     int movesDone = 0;
     float m = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
