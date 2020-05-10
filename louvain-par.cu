@@ -233,42 +233,49 @@ __global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
     atomicAdd(sigmaTot + clique, ki);
 }
 
-
-
-
-
-
-
-void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
-
-    for(int i=0; i < g->size; i++){
-        printf("[%d]=%f\n",i, sigmaTot[i]);
-    }
-
-    Graph * deviceGraph;
-    copyGraphToDevice(g, &deviceGraph);
-
-    float * deviceSigmaTot;
-    copyFloatArrayToDevice(sigmaTot, g->size, &deviceSigmaTot);
-
-    int * deviceCliques;
-    copyArrayToDevice(cliques, g->size, &deviceCliques);
-
-    printf("copied\n");
-
-    thrust::device_ptr<float> dev_ptr(deviceSigmaTot);
-    thrust::fill(dev_ptr, dev_ptr + g->size, (float) 0);
-    printf("filled\n");
-    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, deviceSigmaTot, deviceCliques);
-
-    printf("calculated\n");
-
-    HANDLE_ERROR(cudaMemcpy(sigmaTot ,deviceSigmaTot, sizeof(float) * g->size, cudaMemcpyDeviceToHost));
-    for(int i=0; i < g->size; i++){
-        printf("[%d]=%f\n",i, sigmaTot[i]);
-    }
-
+__global__ void calculateCliqueSizes(Graph*g, int* cliques, int * cliqueSizes) {
+    int tid = threadIdx.x;
+    int vertice = tid; //TODO
+    int clique = cliques[vertice];
+    atomicAdd(cliqueSizes + clique, 1);
 }
+
+
+
+
+
+
+
+//void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
+//
+//    for(int i=0; i < g->size; i++){
+//        printf("[%d]=%f\n",i, sigmaTot[i]);
+//    }
+//
+//    Graph * deviceGraph;
+//    copyGraphToDevice(g, &deviceGraph);
+//
+//    float * deviceSigmaTot;
+//    copyFloatArrayToDevice(sigmaTot, g->size, &deviceSigmaTot);
+//
+//    int * deviceCliques;
+//    copyArrayToDevice(cliques, g->size, &deviceCliques);
+//
+//    printf("copied\n");
+//
+//    thrust::device_ptr<float> dev_ptr(deviceSigmaTot);
+//    thrust::fill(dev_ptr, dev_ptr + g->size, (float) 0);
+//    printf("filled\n");
+//    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, deviceSigmaTot, deviceCliques);
+//
+//    printf("calculated\n");
+//
+//    HANDLE_ERROR(cudaMemcpy(sigmaTot ,deviceSigmaTot, sizeof(float) * g->size, cudaMemcpyDeviceToHost));
+//    for(int i=0; i < g->size; i++){
+//        printf("[%d]=%f\n",i, sigmaTot[i]);
+//    }
+//
+//}
 
 
 
@@ -289,22 +296,38 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int changed = 1;
     int iters = 0;
-    float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
-    int* cliqueSizes = (int*) calloc(g->size, sizeof(int));
+
+    Graph * deviceGraph;
+    copyGraphToDevice(g, &deviceGraph);
+
+    float * deviceSigmaTot;
+    HANDLE_ERROR(cudaMalloc((void**) &deviceSigmaTot, sizeof(float) * g->size));
+    thrust::device_ptr<float> deviceSigmaTot_ptr(deviceSigmaTot);
+    thrust::fill(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0);
+
+
+    int * deviceCliques;
+    copyArrayToDevice(cliques, g->size, &deviceCliques);
+
+    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, deviceSigmaTot, deviceCliques); //TODO better grouping
+
+    int * deviceCliqueSizes;
+    HANDLE_ERROR(cudaMalloc((void**) &deviceCliqueSizes, sizeof(int) * g->size));
+    thrust::device_ptr<int> deviceCliqueSizes_ptr(deviceCliqueSizes);
+    thrust::fill(deviceCliqueSizes_ptr, deviceCliqueSizes_ptr + g->size, (int) 0);
+
     int nMoves = g->size;
-    Move * moves = (Move*) calloc(nMoves, sizeof(Move));
+    thrust::device_vector<Move> deviceMoves(nMoves, 0);
+
     int movesDone = 0;
-    float m = 0;
-    for(int i=0; i < g->size; i++){
-        float ki = getKi(g, i);
-        if(ki > 0){
-            int c = cliques[i];
-            cliqueSizes[c] +=1;
-            m += ki;
-        }
-    }
+    float m = = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
+
+    calculateCliqueSizes<<<1,g->size>>>(deviceGraph, deviceCliques, deviceCliqueSizes); //TODO better grouping
+
     m = m/2;
-    recalcSigmaTot(g, sigmaTot, cliques);
+
+    printf("calculated:\n");
+    printf("m=%f\n", m);
 
     if(minimum < 1){
         printf("exiting\n");
