@@ -157,7 +157,7 @@ int calculateMovesToApply(int iters, int movesDone, int nMoves){
     return ret > 0 ? ret : 1;
 }
 
-float getKiDevice(int numEdges, Edge* edges){
+__device__ float getKiDevice(int numEdges, Edge* edges){
     float sum = 0;
     for(int i=0; i<numEdges; i++){
         sum += edges[i].value;
