@@ -11,7 +11,7 @@ extern "C" {
 #include <thrust/fill.h>
 #include <thrust/copy.h>
 
-__device__ double atomicAdd(double* address, double val)
+__device__ float atomicAdd(float* address, float val)
 {
     unsigned int* address_as_ull =
             (unsigned int*)address;
