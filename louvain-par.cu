@@ -250,6 +250,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 
     float * deviceSigmaTot;
     copyFloatArrayToDevice(sigmaTot, g->size, &deviceSigmaTot);
+
     int * deviceCliques;
     copyArrayToDevice(cliques, g->size, &deviceCliques);
 
@@ -257,10 +258,12 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 
     thrust::device_ptr<float> dev_ptr(deviceSigmaTot);
     thrust::fill(dev_ptr, dev_ptr + g->size, (float) 0);
+    printf("filled\n");
     recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, sigmaTot, cliques);
 
-    HANDLE_ERROR(cudaMemcpy((void*)sigmaTot , (void*)deviceSigmaTot, sizeof(float) * g->size, cudaMemcpyDeviceToHost));
+    printf("calculated\n");
 
+    HANDLE_ERROR(cudaMemcpy(sigmaTot ,deviceSigmaTot, sizeof(float) * g->size, cudaMemcpyDeviceToHost));
     for(int i=0; i < g->size; i++){
         printf("[%d]=%f\n",i, sigmaTot[i]);
     }
