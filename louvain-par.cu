@@ -2,9 +2,13 @@
 // Created by kajetan on 30.04.2020.
 //
 
+extern "C" {
 #include <assert.h>
 #include "louvain.h"
 #include "graph-utils.h"
+}
+
+
 
 float getKi(Graph *g, int vertice){
     float sum=0;

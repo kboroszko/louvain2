@@ -246,24 +246,25 @@ else
 	@echo "Sample is ready - all dependencies have been met"
 endif
 
-louvain-par.o: louvain-par.cu
+louvain-par.o:louvain-par.cu
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-%.o: %.c
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
-
-
-louvain-par: louvain-par.o louvain.o mmio.o graph-utils.o
-	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
+louvain-par: louvain-par.o
+	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ graph-utils.o mmio.o
 	$(EXEC) mkdir -p ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
 	$(EXEC) cp $@ ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
+
+graph-utils.o: graph-utils.c
+	$(EXEC) gcc -std=c99 -c graph-utils.c -o graph-utils.o
+
+mmio.o: mmio.c
+	$(EXEC) gcc -std=c99 -c mmio.c -o mmio.o
 
 run: build
 	$(EXEC) ./louvain-par
 
 clean:
-	rm -f louvain-par louvain-par.o
+	rm -f louvain-par *.o
 	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/louvain-par
 
 clobber: clean
-
