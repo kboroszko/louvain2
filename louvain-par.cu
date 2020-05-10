@@ -1,10 +1,11 @@
 //
 // Created by kajetan on 30.04.2020.
 //
-
-#include <assert.h>
-#include "louvain.h"
-#include "graph-utils.h"
+extern "C" {
+    #include <assert.h>
+    #include "louvain.h"
+    #include "graph-utils.h"
+}
 
 #include <thrust/fill.h>
 
