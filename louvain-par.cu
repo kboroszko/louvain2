@@ -259,7 +259,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
     thrust::fill(dev_ptr, dev_ptr + g->size, (float) 0);
     recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, sigmaTot, cliques);
 
-    HANDLE_ERROR(cudaMemcpy((void*) deviceSigmaTot, (void*)sigmaTot, sizeof(float) * g->size, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy((void*)sigmaTot , (void*)deviceSigmaTot, sizeof(float) * g->size, cudaMemcpyDeviceToHost));
 
     for(int i=0; i < g->size; i++){
         printf("[%d]=%f\n",i, sigmaTot[i]);
