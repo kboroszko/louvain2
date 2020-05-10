@@ -364,17 +364,11 @@ void printCliques(int size, int*cliques){
     printf("];\n");
 }
 
-void printUsage(char * name){
-    printf("# Usage:\n");
-    printf("# %s  [--verbose] <filename>\n", name);
-    printf("#     --verbose   print out the links\n");
-    printf("#     filename    name of file with MTX matrix\n");
-}
 
 int main(int argc, char **argv){
     char * fileName;
     int verbose = 0;
-    if(argc > 2 || argc > 3){
+    if(argc < 2 || argc > 3){
         printf("wrong number of arguments!");
         printUsage(argv[0]);
         return 1;

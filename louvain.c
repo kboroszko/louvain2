@@ -360,22 +360,42 @@ void printCliques(int size, int*cliques){
     printf("];\n");
 }
 
-int main(){
-    printf("hello world\n");
 
-    MData * dat = readData("ash85.mtx");
-//    printData(dat);
+void printUsage(char * name){
+    printf("# Usage:\n");
+    printf("# %s  [--verbose] <filename>\n", name);
+    printf("#     --verbose   print out the links\n");
+    printf("#     filename    name of file with MTX matrix\n");
+}
+
+int main(int argc, char **argv){
+    char * fileName;
+    int verbose = 0;
+    if(argc < 2 || argc > 3){
+        printf("wrong number of arguments!");
+        printUsage(argv[0]);
+        return 1;
+    } else if(argc == 2){
+        fileName = argv[1];
+    } else {
+        if(strcmp(argv[1], "--verbose") == 0){
+            fileName = argv[2];
+            verbose = 1;
+        } else {
+            printUsage(argv[0]);
+            return 2;
+        }
+    }
+
+    MData * dat = readData(fileName);
 
     Graph *g = initGraph(dat);
     destroyMData(dat);
-
-
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
     for(int i=0; i<g->size; i++){
         cliques[i]=i;
     }
-
 
     int bigLoopIteration = 0;
     float minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
@@ -406,7 +426,9 @@ int main(){
         bigLoopIteration += 1;
     }
     printf("converged after %d iterations!\n", bigLoopIteration+1);
-//    printCliques(g->size, cliques);
+    if(verbose != 0){
+        printCliques(g->size, cliques);
+    }
 
 
     mod = modularity(g, cliques);
