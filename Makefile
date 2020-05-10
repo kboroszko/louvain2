@@ -251,8 +251,8 @@ louvain-par.o:louvain-par.cu
 
 louvain-par: louvain-par.o graph-utils.o mmio.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+
-	$(EXEC) mkdir -p ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
-	$(EXEC) cp $@ ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
+	$(EXEC) mkdir -p bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
+	$(EXEC) cp $@ bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
 
 graph-utils.o: graph-utils.c
 	$(EXEC) gcc -std=c99 -c graph-utils.c -o graph-utils.o
@@ -265,6 +265,6 @@ run: build
 
 clean:
 	rm -f louvain-par *.o
-	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/louvain-par
+	rm -rf bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/louvain-par
 
 clobber: clean
