@@ -241,7 +241,7 @@ __global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
 void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 
     for(int i=0; i < g->size; i++){
-        printf("[%d]=%f\n",i, sigmaTot);
+        printf("[%d]=%f\n",i, sigmaTot[i]);
     }
 
     Graph * deviceGraph;
@@ -260,7 +260,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
     HANDLE_ERROR(cudaMemcpy((void*) deviceSigmaTot, (void*)sigmaTot, sizeof(float) * g->size, cudaMemcpyHostToDevice));
 
     for(int i=0; i < g->size; i++){
-        printf("[%d]=%f\n",i, sigmaTot);
+        printf("[%d]=%f\n",i, sigmaTot[i]);
     }
 
 }
