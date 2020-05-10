@@ -201,6 +201,26 @@ void copyFloatArrayToDevice(float * arr, int size, float** deviceArray){
     HANDLE_ERROR(cudaMemcpy((void*) *deviceArray, (void*)arr, sizeof(float) * size, cudaMemcpyHostToDevice));
 }
 
+__global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
+    int tid = threadIdx.x;
+    int vertice = tid;
+
+    int clique = cliques[vertice];
+
+    int edgesStart =  EDGES_IDX(g, vertice - 1);
+    int edgesEnd =  EDGES_IDX(g, vertice);
+    Edge * edgesPtr = g->edges + edgesStart;
+    int numEdges = edgesEnd - edgesStart;
+    float ki = getKiDevice(numEdges, edgesPtr);
+    atomicAdd_system(sigmaTot + clique, ki);
+}
+
+
+
+
+
+
+
 void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 
     for(int i=0; i < g->size; i++){
@@ -231,19 +251,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 
 
 
-__global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
-    int tid = threadIdx.x;
-    int vertice = tid;
 
-    int clique = cliques[vertice];
-
-    int edgesStart =  EDGES_IDX(g, vertice - 1);
-    int edgesEnd =  EDGES_IDX(g, vertice);
-    Edge * edgesPtr = g->edges + edgesStart;
-    int numEdges = edgesEnd - edgesStart;
-    float ki = getKiDevice(numEdges, edgesPtr);
-    atomicAdd_system(sigmaTot + clique, ki);
-}
 
 
 
