@@ -167,7 +167,6 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int nMoves = g->numEdges;
     Move * moves = (Move*) calloc(nMoves, sizeof(Move));
     int movesDone = 0;
-//    printf("moves:%p\n", moves);
     float m = 0;
     for(int i=0; i < g->size; i++){
         float ki = getKi(g, i);
@@ -178,40 +177,17 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         }
     }
     m = m/2;
-//    printf("m=%f\n", m);
     recalcSigmaTot(g, sigmaTot, cliques);
-
-//    printf("sigmatot:\n");
-//    for(int i=0; i<g->size; i++){
-//        printf("%f\n", sigmaTot[i]);
-//    }
-
-//
     float mod = modularity(g, cliques);
-//    printf("mod:%f\n", mod);
-//    float dq = dQ(g, 10, cliques, 10, sigmaTot, m);
-//    printf("dq=%f\n", dq);
-//    cliques[10] = 10;
-//    recalcSigmaTot(g, sigmaTot, cliques);
-
-//    printf("sigmatot:\n");
-//    for(int i=0; i<g->size; i++){
-//        printf("%f\n", sigmaTot[i]);
-//    }
-
-
-//    float dq2 = dQ(g, 10, cliques, 9, sigmaTot, m);
-//    printf("dq2=%f\n", dq2);
-//
-//    printf("mod:%f\n", modularity(g, cliques));
-//    printf("delta:%f\n", modularity(g, cliques) - mod);
 
 
 
 
 
     while(changed != 0 ){
-//        printf("---------------------------- iter %d ------------------------------------------\n", iters);
+        if(DEBUG){
+            printf("---------------------------- small iter %d ------------------------------------------\n", iters);
+        }
         changed = 0;
         iters++;
         movesDone = 0;
@@ -220,7 +196,10 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             if(pretender != -1){
                 float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot, m);
                 if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
-//                    printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ );
+                    if(DEBUG) {
+                        printf("%.8f > %.8f\n", deltaQ, minimum);
+                        printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ);
+                    }
                     changed = 1;
                     int oldClique = cliques[vert];
                     Move * m = moves + movesDone;
@@ -353,7 +332,9 @@ void updateOldCliques(Graph *g, int* cliques){
             index = cliques[index];
         }
         if(cliques[i] != index){
-//            printf("CHANGED CLIQUE FOR %d FROM %d TO %d\n", i, cliques[i], index);
+            if(DEBUG){
+            printf("CHANGED CLIQUE FOR %d FROM %d TO %d\n", i, cliques[i], index);
+            }
             cliques[i] = index;
         }
     }
@@ -363,14 +344,14 @@ void updateOldCliques(Graph *g, int* cliques){
 void printCliques(int size, int*cliques){
     for (int i = 0; i < size; ++i) {
 //        printf("cliques[%d]=%d;\n", i, cliques[i]);
-        printf("%d,", cliques[i]);
+        printf("%d\n", cliques[i]);
     }
 }
 
 int main(){
     printf("hello world\n");
 
-    MData * dat = readData("wing_nodal.mtx");
+    MData * dat = readData("yeast.mtx");
 //    printData(dat);
 
     Graph *g = initGraph(dat);
@@ -383,22 +364,6 @@ int main(){
         cliques[i]=i;
     }
 
-//    cliques[0]=0;
-//    cliques[1]=1;
-//    cliques[2]=1;
-//    cliques[3]=0;
-//    cliques[4]=1;
-//    cliques[5]=0;
-//    cliques[6]=6;
-//    cliques[7]=0;
-//    cliques[8]=9;
-//    cliques[9]=9;
-//    cliques[10]=9;
-//    cliques[11]=10;
-//    cliques[12]=9;
-//    cliques[13]=10;
-//    cliques[14]=9;
-//    cliques[15]=8;
 
     int bigLoopIteration = 0;
     float minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
@@ -408,11 +373,11 @@ int main(){
     float mod = modularity(g, cliques);
     printf("modularity:%f\n", mod);
     int iter = 10;
-    while(iter > 1 || minimum > 0.000001f){
+    while(iter > 1 || minimum > 0.00001f){
 
 //        printf("========= PHASE 1 ==================\n");
         minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
-        minimum = minimum < 0 ? 0.f : minimum;
+        minimum = minimum < 0.000001f ? 0.000001f : minimum;
 //        printf("min:%f\n", minimum);
         iter = phaseOne(g, cliques, minimum, threshold);
 

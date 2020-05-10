@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import matplotlib
 
 
-file = "./../data/example.mtx"
+file = "./../data/ash85.mtx"
 
 def readData(filename):
     cliques = []
