@@ -7,6 +7,7 @@ extern "C" {
     #include "graph-utils.h"
 }
 
+#include "errors.h"
 #include <thrust/fill.h>
 
 
