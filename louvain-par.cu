@@ -166,7 +166,7 @@ float getKiDevice(int numEdges, Edge* edges){
 }
 
 void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
-    Graph * deviceGraph = *deviceGraph;
+    Graph * deviceGraph = *deviceGraphPtr;
     HANDLE_ERROR(cudaMalloc((void**)deviceGraphPtr, sizeof(Graph)));
     HANDLE_ERROR(cudaMemcpy((void*)*deviceGraphPtr, (void*)g, sizeof(Graph), cudaMemcpyHostToDevice));
 
