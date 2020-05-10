@@ -229,7 +229,7 @@ __global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
     Edge * edgesPtr = g->edges + edgesStart;
     int numEdges = edgesEnd - edgesStart;
     float ki = getKiDevice(numEdges, edgesPtr);
-    atomicAdd_system(sigmaTot + clique, ki);
+    atomicAdd(sigmaTot + clique, ki);
 }
 
 
