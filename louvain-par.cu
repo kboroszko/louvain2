@@ -361,21 +361,16 @@ void printCliques(int size, int*cliques){
 }
 
 int main(){
-    printf("hello world\n");
 
     MData * dat = readData("ash85.mtx");
-//    printData(dat);
 
     Graph *g = initGraph(dat);
     destroyMData(dat);
-
-
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
     for(int i=0; i<g->size; i++){
         cliques[i]=i;
     }
-
 
     int bigLoopIteration = 0;
     float minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
