@@ -34,4 +34,6 @@ void phaseTwo(Graph *g, int *cliques);
 
 float modularity(Graph *g, int * cliques);
 
+void updateOldCliques(Graph *g, int* cliques);
+
 #endif //LOUVAIN2_LOUVAIN_H

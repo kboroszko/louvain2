@@ -100,12 +100,12 @@ int compareMoves( const void * a, const void * b){
     }
 }
 
-void applyBestMoves(int* cliques, Move* moves ,int nMoves, int nBest){
+void applyBestMoves(int* cliques, Move* moves ,int nMoves, int nBest, int sort){
     if(nMoves == 0){
         return;
     }
     assert(nMoves >= nBest);
-    if(nMoves != nBest){
+    if(nMoves != nBest && sort != 0){
         qsort(moves, nMoves, sizeof(Move), compareMoves);
     }
     for(int i=0; i < nBest; i++){
@@ -114,8 +114,8 @@ void applyBestMoves(int* cliques, Move* moves ,int nMoves, int nBest){
     }
 }
 
-float previewModularity(Graph * g, int*newCliques, Move* moves, int nMoves, int nBest){
-    applyBestMoves(newCliques, moves, nMoves, nBest);
+float previewModularity(Graph * g, int*newCliques, Move* moves, int nMoves, int nBest, int sort){
+    applyBestMoves(newCliques, moves, nMoves, nBest, sort);
     float newMod = modularity(g, newCliques);
     return newMod;
 }
@@ -153,7 +153,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 
 int calculateMovesToApply(int iters, int movesDone, int nMoves){
     int ret = movesDone;
-    for(int i=1; i< iters; i++){
+    for(int i=0; i< iters; i++){
         ret = (ret + 1)/ 2;
     }
     return ret > 0 ? ret : 1;
@@ -215,15 +215,15 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         if(DEBUG){
             int* newCliques = malloc(sizeof(int) * g->size);
             memcpy(newCliques, cliques, sizeof(int) * g->size);
-            float newMod = previewModularity(g, newCliques, moves, movesDone, movesDone);
+            float newMod = previewModularity(g, newCliques, moves, movesDone, movesDone, 0);
             printf("modularity gain if all applied=%f\n", newMod - mod);
             free(newCliques);
         }
-        int movesToApply = calculateMovesToApply(iters, movesDone, nMoves);
+        int movesToApply = calculateMovesToApply(1, movesDone, nMoves);
 
         int* newCliques = malloc(sizeof(int) * g->size);
         memcpy(newCliques, cliques, sizeof(int) * g->size);
-        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply);
+        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
 
         if(DEBUG){
             printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
@@ -232,12 +232,20 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
         if(movesDone > 0){
             float bestdQ = moves[0].gain;
+            int movesIter = 2;
+            while((newMod - mod < threshold) && (movesToApply > 1 || bestdQ > threshold)){
+                movesToApply = calculateMovesToApply(movesIter, movesDone, nMoves);
+                memcpy(newCliques, cliques, sizeof(int) * g->size);
+                newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
+                movesIter++;
+            }
             if (newMod - mod > threshold) {
                 memcpy(cliques, newCliques, sizeof(int) * g->size);
                 recalcSigmaTot(g, sigmaTot, cliques);
                 mod = newMod;
-                printf("%f, \n", modularity(g, cliques));
-            } else if(movesToApply == 1 && bestdQ < threshold){
+//                printf("%f, \n", modularity(g, cliques));
+            }
+            if(movesToApply == 1 && bestdQ < threshold){
                 changed = 0;
             }
         } else {
@@ -338,20 +346,24 @@ void updateOldCliques(Graph *g, int* cliques){
             cliques[i] = index;
         }
     }
-
 }
 
 void printCliques(int size, int*cliques){
+    printf("labs=[");
     for (int i = 0; i < size; ++i) {
 //        printf("cliques[%d]=%d;\n", i, cliques[i]);
-        printf("%d\n", cliques[i]);
+        printf("%d,", cliques[i]);
+        if(i%500 == 0){
+            printf("\n");
+        }
     }
+    printf("];\n");
 }
 
 int main(){
     printf("hello world\n");
 
-    MData * dat = readData("yeast.mtx");
+    MData * dat = readData("hangGlider_4.mtx");
 //    printData(dat);
 
     Graph *g = initGraph(dat);
@@ -368,16 +380,18 @@ int main(){
     int bigLoopIteration = 0;
     float minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
 
-    float threshold = 0.f;
+    float threshold = 0.00001f;
+
+    // profiler at hangGlider_4 th=0.00001f
 
     float mod = modularity(g, cliques);
     printf("modularity:%f\n", mod);
     int iter = 10;
-    while(iter > 1 || minimum > 0.00001f){
+    while(iter > 1 || minimum > threshold/10.f){
 
 //        printf("========= PHASE 1 ==================\n");
         minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
-        minimum = minimum < 0.000001f ? 0.000001f : minimum;
+        minimum = minimum < threshold/20.f ? threshold/20.f : minimum;
 //        printf("min:%f\n", minimum);
         iter = phaseOne(g, cliques, minimum, threshold);
 
@@ -392,7 +406,11 @@ int main(){
         bigLoopIteration += 1;
     }
     printf("converged after %d iterations!\n", bigLoopIteration+1);
-    printCliques(g->size, cliques);
+//    printCliques(g->size, cliques);
+
+
+    mod = modularity(g, cliques);
+    printf("modularity:%f\n", mod);
 
     free(cliques);
 
