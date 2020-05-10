@@ -320,7 +320,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     thrust::device_vector<Move> deviceMoves(nMoves, 0);
 
     int movesDone = 0;
-    float m = = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
+    float m = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
 
     calculateCliqueSizes<<<1,g->size>>>(deviceGraph, deviceCliques, deviceCliqueSizes); //TODO better grouping
 
@@ -334,81 +334,81 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         exit(10);
 
     }
-    float mod = modularity(g, cliques);
-
-
-    while(changed != 0 ){
-        if(DEBUG){
-            printf("---------------------------- small iter %d ------------------------------------------\n", iters);
-        }
-        changed = 0;
-        iters++;
-        movesDone = 0;
-        for(int vert=0; vert < g->size; vert++){
-            int pretender = bestClique(g, vert, cliques, sigmaTot,m);
-            if(pretender != -1){
-                float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot, m);
-                if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
-                    if(DEBUG) {
-                        printf("%.8f > %.8f\n", deltaQ, minimum);
-                        printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ);
-                    }
-                    changed = 1;
-                    int oldClique = cliques[vert];
-                    Move * m = moves + movesDone;
-                    m->vertice = vert;
-                    m->gain = deltaQ;
-                    m->toClique = pretender;
-                    movesDone++;
-                    cliqueSizes[pretender] += 1;
-                    cliqueSizes[oldClique] -= 1;
-                }
-            }
-        }
-        if(DEBUG){
-            int* newCliques = (int*) malloc(sizeof(int) * g->size);
-            memcpy(newCliques, cliques, sizeof(int) * g->size);
-            float newMod = previewModularity(g, newCliques, moves, movesDone, movesDone, 0);
-            printf("modularity gain if all applied=%f\n", newMod - mod);
-            free(newCliques);
-        }
-        int movesToApply = calculateMovesToApply(1, movesDone, nMoves);
-
-        int* newCliques = (int*) malloc(sizeof(int) * g->size);
-        memcpy(newCliques, cliques, sizeof(int) * g->size);
-        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
-
-        if(DEBUG){
-            printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
-        }
-
-
-        if(movesDone > 0){
-            float bestdQ = moves[0].gain;
-            int movesIter = 2;
-            while((newMod - mod < threshold) && (movesToApply > 1 || bestdQ > threshold)){
-                movesToApply = calculateMovesToApply(movesIter, movesDone, nMoves);
-                memcpy(newCliques, cliques, sizeof(int) * g->size);
-                newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
-                movesIter++;
-            }
-            if (newMod - mod > threshold) {
-                memcpy(cliques, newCliques, sizeof(int) * g->size);
-                recalcSigmaTot(g, sigmaTot, cliques);
-                mod = newMod;
-//                printf("%f, \n", modularity(g, cliques));
-            }
-            if(movesToApply == 1 && bestdQ < threshold){
-                changed = 0;
-            }
-        } else {
-            changed = 0;
-        }
-        free(newCliques);
-    }
-    free(cliqueSizes);
-    free(moves);
-    free(sigmaTot);
+//    float mod = modularity(g, cliques);
+//
+//
+//    while(changed != 0 ){
+//        if(DEBUG){
+//            printf("---------------------------- small iter %d ------------------------------------------\n", iters);
+//        }
+//        changed = 0;
+//        iters++;
+//        movesDone = 0;
+//        for(int vert=0; vert < g->size; vert++){
+//            int pretender = bestClique(g, vert, cliques, sigmaTot,m);
+//            if(pretender != -1){
+//                float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot, m);
+//                if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
+//                    if(DEBUG) {
+//                        printf("%.8f > %.8f\n", deltaQ, minimum);
+//                        printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ);
+//                    }
+//                    changed = 1;
+//                    int oldClique = cliques[vert];
+//                    Move * m = moves + movesDone;
+//                    m->vertice = vert;
+//                    m->gain = deltaQ;
+//                    m->toClique = pretender;
+//                    movesDone++;
+//                    cliqueSizes[pretender] += 1;
+//                    cliqueSizes[oldClique] -= 1;
+//                }
+//            }
+//        }
+//        if(DEBUG){
+//            int* newCliques = (int*) malloc(sizeof(int) * g->size);
+//            memcpy(newCliques, cliques, sizeof(int) * g->size);
+//            float newMod = previewModularity(g, newCliques, moves, movesDone, movesDone, 0);
+//            printf("modularity gain if all applied=%f\n", newMod - mod);
+//            free(newCliques);
+//        }
+//        int movesToApply = calculateMovesToApply(1, movesDone, nMoves);
+//
+//        int* newCliques = (int*) malloc(sizeof(int) * g->size);
+//        memcpy(newCliques, cliques, sizeof(int) * g->size);
+//        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
+//
+//        if(DEBUG){
+//            printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
+//        }
+//
+//
+//        if(movesDone > 0){
+//            float bestdQ = moves[0].gain;
+//            int movesIter = 2;
+//            while((newMod - mod < threshold) && (movesToApply > 1 || bestdQ > threshold)){
+//                movesToApply = calculateMovesToApply(movesIter, movesDone, nMoves);
+//                memcpy(newCliques, cliques, sizeof(int) * g->size);
+//                newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
+//                movesIter++;
+//            }
+//            if (newMod - mod > threshold) {
+//                memcpy(cliques, newCliques, sizeof(int) * g->size);
+//                recalcSigmaTot(g, sigmaTot, cliques);
+//                mod = newMod;
+////                printf("%f, \n", modularity(g, cliques));
+//            }
+//            if(movesToApply == 1 && bestdQ < threshold){
+//                changed = 0;
+//            }
+//        } else {
+//            changed = 0;
+//        }
+//        free(newCliques);
+//    }
+//    free(cliqueSizes);
+//    free(moves);
+//    free(sigmaTot);
     return iters;
 }
 
