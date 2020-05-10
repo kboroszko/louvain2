@@ -11,23 +11,23 @@ extern "C" {
 #include <thrust/fill.h>
 #include <thrust/copy.h>
 
-__device__ float atomicAdd(float* address, float val)
-{
-    unsigned int* address_as_ull =
-            (unsigned int*)address;
-    unsigned int old = *address_as_ull, assumed;
-
-    do {
-        assumed = old;
-        old = atomicCAS(address_as_ull, assumed,
-                        __float_as_int(val +
-                                               __int_as_float(assumed)));
-
-        // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-    } while (assumed != old);
-
-    return __int_as_float(old);
-}
+//__device__ float atomicAdd(float* address, float val)
+//{
+//    unsigned int* address_as_ull =
+//            (unsigned int*)address;
+//    unsigned int old = *address_as_ull, assumed;
+//
+//    do {
+//        assumed = old;
+//        old = atomicCAS(address_as_ull, assumed,
+//                        __float_as_int(val +
+//                                               __int_as_float(assumed)));
+//
+//        // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+//    } while (assumed != old);
+//
+//    return __int_as_float(old);
+//}
 
 float getKi(Graph *g, int vertice){
     float sum=0;
