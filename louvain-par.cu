@@ -259,7 +259,7 @@ void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
     thrust::device_ptr<float> dev_ptr(deviceSigmaTot);
     thrust::fill(dev_ptr, dev_ptr + g->size, (float) 0);
     printf("filled\n");
-    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, sigmaTot, cliques);
+    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, deviceSigmaTot, deviceCliques);
 
     printf("calculated\n");
 
