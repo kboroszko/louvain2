@@ -2,11 +2,11 @@
 // Created by kajetan on 30.04.2020.
 //
 
-extern "C" {
 #include <assert.h>
 #include "louvain.h"
 #include "graph-utils.h"
-}
+
+#include <thrust/fill.h>
 
 
 
@@ -145,15 +145,7 @@ int moveValid(int from, int to, int* cliqueSizes){
     return 0;
 }
 
-void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
-    for(int i=0; i < g->size; i++){
-        sigmaTot[i] = 0;
-    }
-    for(int i = 0; i < g->size; i++){
-        float ki = getKi(g, i);
-        sigmaTot[cliques[i]] += ki;
-    }
-}
+
 
 int calculateMovesToApply(int iters, int movesDone, int nMoves){
     int ret = movesDone;
@@ -163,12 +155,67 @@ int calculateMovesToApply(int iters, int movesDone, int nMoves){
     return ret > 0 ? ret : 1;
 }
 
+float getKiDevice(int numEdges, Edge* edges){
+    float sum = 0;
+    for(int i=0; i<numEdges; i++){
+        sum += edges[i].value;
+    }
+}
+
+Graph* copyGraphToDevice(Graph*g, Graph**deviceGraph){
+    HANDLE_ERROR(cudaMalloc((void**)deviceGraph, sizeof(Graph)));
+    HANDLE_ERROR(cudaMemcpy(deviceGraph, g, sizeof(Graph), cudaMemcpyHostToDevice));
+
+    HANDLE_ERROR(cudaMalloc((void**)&(deviceGraph->edges), sizeof(Edge) * g->numEdges));
+    HANDLE_ERROR(cudaMalloc((void**)&(deviceGraph->verticeLastEdgeExclusive), sizeof(int) * g->size));
+
+    thrust::copy(g->edges, g->edges + g->numEdges, deviceGraph->edges);
+    thrust::copy(g->verticeLastEdgeExclusive, g->verticeLastEdgeExclusive + g->size, deviceGraph->size);
+
+    printf("copying succeded\n");
+}
+
+void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
+
+//    thrust::fill(sigmaTot, sigmaTot + g->size, (float) 0);
+//    recalcSigmaTotPar<<<>>>>(g, sigmaTot, cliques);
+
+}
+
+
+
+//
+//__global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
+//    int tid = 0; //TODO
+//    int vertice = (tid);
+//
+//    int clique = cliques[vertice];
+//
+//    int edgesStart =  EDGES_IDX(g, vertice - 1);
+//    int edgesEnd =  EDGES_IDX(g, vertice);
+//    Edge * edgesPtr = g->edges + edgesStart;
+//    int numEdges = edgesEnd - edgesStart;
+//    float ki = getKiDevice(numEdges, edgesPtr);
+//    atomicAdd_system(sigmaTot + clique, ki);
+//}
+
+
+
+
+
+
+
+
+
+
+
+
 int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int changed = 1;
     int iters = 0;
     float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
     int* cliqueSizes = (int*) calloc(g->size, sizeof(int));
-    int nMoves = g->numEdges;
+    int nMoves = g->size;
     Move * moves = (Move*) calloc(nMoves, sizeof(Move));
     int movesDone = 0;
     float m = 0;
@@ -183,9 +230,6 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     m = m/2;
     recalcSigmaTot(g, sigmaTot, cliques);
     float mod = modularity(g, cliques);
-
-
-
 
 
     while(changed != 0 ){
@@ -376,7 +420,7 @@ int main(int argc, char **argv){
     char * fileName;
     int verbose = 0;
     if(argc < 2 || argc > 3){
-        printf("wrong number of arguments!");
+        printf("wrong number of arguments!\n");
         printUsage(argv[0]);
         return 1;
     } else if(argc == 2){
@@ -395,6 +439,13 @@ int main(int argc, char **argv){
 
     Graph *g = initGraph(dat);
     destroyMData(dat);
+
+    Graph * deviceGraph;
+    copyGraphToDevice(g, &deviceGraph);
+
+    if(argc == 2){
+        return 0;
+    }
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
     for(int i=0; i<g->size; i++){

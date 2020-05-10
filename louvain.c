@@ -164,7 +164,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int iters = 0;
     float* sigmaTot = (float*) malloc(sizeof(float) * g->size);
     int* cliqueSizes = (int*) calloc(g->size, sizeof(int));
-    int nMoves = g->numEdges;
+    int nMoves = g->size;
     Move * moves = (Move*) calloc(nMoves, sizeof(Move));
     int movesDone = 0;
     float m = 0;
@@ -179,9 +179,6 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     m = m/2;
     recalcSigmaTot(g, sigmaTot, cliques);
     float mod = modularity(g, cliques);
-
-
-
 
 
     while(changed != 0 ){
