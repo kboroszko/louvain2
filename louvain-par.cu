@@ -191,29 +191,59 @@ void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
     printf("graph init succeded\n");
 }
 
+void copyArrayToDevice(int * arr, int size, int** deviceArray){
+    HANDLE_ERROR(cudaMalloc((void**) deviceArray, sizeof(int) * size));
+    HANDLE_ERROR(cudaMemcpy((void*) *deviceArray, (void*)arr, sizeof(int) * size, cudaMemcpyHostToDevice));
+}
+
+void copyFloatArrayToDevice(float * arr, int size, float** deviceArray){
+    HANDLE_ERROR(cudaMalloc((void**) deviceArray, sizeof(float) * size));
+    HANDLE_ERROR(cudaMemcpy((void*) *deviceArray, (void*)arr, sizeof(float) * size, cudaMemcpyHostToDevice));
+}
+
 void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
 
-//    thrust::fill(sigmaTot, sigmaTot + g->size, (float) 0);
-//    recalcSigmaTotPar<<<>>>>(g, sigmaTot, cliques);
+    for(int i=0; i < g->size; i++){
+        printf("[%d]=%f\n",i, sigmaTot);
+    }
+
+    Graph * deviceGraph;
+    copyGraphToDevice(g, &deviceGraph);
+
+    float * deviceSigmaTot;
+    copyFloatArrayToDevice(sigmaTot, g->size, &deviceSigmaTot);
+    int * deviceCliques;
+    copyArrayToDevice(cliques, g->size, &deviceCliques);
+
+    printf("copied\n");
+
+    thrust::fill(deviceSigmaTot, deviceSigmaTot + g->size, (float) 0);
+    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, sigmaTot, cliques);
+
+    HANDLE_ERROR(cudaMemcpy((void*) deviceSigmaTot, (void*)sigmaTot, sizeof(float) * g->size, cudaMemcpyHostToDevice));
+
+    for(int i=0; i < g->size; i++){
+        printf("[%d]=%f\n",i, sigmaTot);
+    }
 
 }
 
 
 
-//
-//__global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
-//    int tid = 0; //TODO
-//    int vertice = (tid);
-//
-//    int clique = cliques[vertice];
-//
-//    int edgesStart =  EDGES_IDX(g, vertice - 1);
-//    int edgesEnd =  EDGES_IDX(g, vertice);
-//    Edge * edgesPtr = g->edges + edgesStart;
-//    int numEdges = edgesEnd - edgesStart;
-//    float ki = getKiDevice(numEdges, edgesPtr);
-//    atomicAdd_system(sigmaTot + clique, ki);
-//}
+
+__global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
+    int tid = threadIdx.x;
+    int vertice = tid;
+
+    int clique = cliques[vertice];
+
+    int edgesStart =  EDGES_IDX(g, vertice - 1);
+    int edgesEnd =  EDGES_IDX(g, vertice);
+    Edge * edgesPtr = g->edges + edgesStart;
+    int numEdges = edgesEnd - edgesStart;
+    float ki = getKiDevice(numEdges, edgesPtr);
+    atomicAdd_system(sigmaTot + clique, ki);
+}
 
 
 
@@ -245,6 +275,12 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     }
     m = m/2;
     recalcSigmaTot(g, sigmaTot, cliques);
+
+    if(minimum < 1){
+        printf("exiting\n");
+        exit(10);
+
+    }
     float mod = modularity(g, cliques);
 
 
@@ -456,12 +492,7 @@ int main(int argc, char **argv){
     Graph *g = initGraph(dat);
     destroyMData(dat);
 
-    Graph * deviceGraph;
-    copyGraphToDevice(g, &deviceGraph);
 
-    if(argc == 2){
-        return 0;
-    }
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
     for(int i=0; i<g->size; i++){
