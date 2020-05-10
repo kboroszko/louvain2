@@ -166,25 +166,29 @@ float getKiDevice(int numEdges, Edge* edges){
 }
 
 void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
-    Graph * deviceGraph = *deviceGraphPtr;
-    HANDLE_ERROR(cudaMalloc((void**)deviceGraphPtr, sizeof(Graph)));
-    HANDLE_ERROR(cudaMemcpy((void*)*deviceGraphPtr, (void*)g, sizeof(Graph), cudaMemcpyHostToDevice));
 
-    printf("graph init succeded\n");
     Edge * edgesPtr ;
     int * vertPtr ;
 
     HANDLE_ERROR(cudaMalloc((void**) &edgesPtr, sizeof(Edge) * g->numEdges));
     HANDLE_ERROR(cudaMalloc((void**) &vertPtr, sizeof(int) * g->size));
 
-    (*deviceGraphPtr)->edges = edgesPtr;
-    (*deviceGraphPtr)->verticeLastEdgeExclusive = vertPtr;
-
     printf("graph tables malloc succeded\n");
-    HANDLE_ERROR(cudaMemcpy((void*) deviceGraph->edges, (void*)g->edges, sizeof(Edge) * g->numEdges, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy((void*) deviceGraph->verticeLastEdgeExclusive, (void*)g->verticeLastEdgeExclusive, sizeof(int) * g->size, cudaMemcpyHostToDevice));
+
+
+    HANDLE_ERROR(cudaMemcpy((void*) edgesPtr, (void*)g->edges, sizeof(Edge) * g->numEdges, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy((void*) vertPtr, (void*)g->verticeLastEdgeExclusive, sizeof(int) * g->size, cudaMemcpyHostToDevice));
 
     printf("copying succeded\n");
+
+
+    HANDLE_ERROR(cudaMalloc((void**)deviceGraphPtr, sizeof(Graph)));
+
+    Graph gr = {.size=g->size, .numEdges=g->numEdges, .edges=edgesPtr, .verticeLastEdgeExclusive=vertPtr};
+
+    HANDLE_ERROR(cudaMemcpy((void*)*deviceGraphPtr, (void*)&gr, sizeof(Graph), cudaMemcpyHostToDevice));
+
+    printf("graph init succeded\n");
 }
 
 void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
