@@ -171,11 +171,14 @@ void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
     HANDLE_ERROR(cudaMemcpy((void*)*deviceGraphPtr, (void*)g, sizeof(Graph), cudaMemcpyHostToDevice));
 
     printf("graph init succeded\n");
-    Edge ** edgesPtr = &((**deviceGraphPtr).edges);
-    int ** vertPtr = &((**deviceGraphPtr).verticeLastEdgeExclusive);
+    Edge * edgesPtr ;
+    int * vertPtr ;
 
-    HANDLE_ERROR(cudaMalloc((void**) edgesPtr, sizeof(Edge) * g->numEdges));
-    HANDLE_ERROR(cudaMalloc((void**) vertPtr, sizeof(int) * g->size));
+    HANDLE_ERROR(cudaMalloc((void**) &edgesPtr, sizeof(Edge) * g->numEdges));
+    HANDLE_ERROR(cudaMalloc((void**) &vertPtr, sizeof(int) * g->size));
+
+    (*deviceGraphPtr)->edges = edgesPtr;
+    (*deviceGraphPtr)->verticeLastEdgeExclusive = vertPtr;
 
     printf("graph tables malloc succeded\n");
     HANDLE_ERROR(cudaMemcpy((void*) deviceGraph->edges, (void*)g->edges, sizeof(Edge) * g->numEdges, cudaMemcpyHostToDevice));
