@@ -9,7 +9,7 @@ extern "C" {
 
 #include "errors.h"
 #include <thrust/fill.h>
-
+#include <thrust/copy.h>
 
 
 float getKi(Graph *g, int vertice){
@@ -162,11 +162,12 @@ float getKiDevice(int numEdges, Edge* edges){
     for(int i=0; i<numEdges; i++){
         sum += edges[i].value;
     }
+    return sum;
 }
 
-Graph* copyGraphToDevice(Graph*g, Graph**deviceGraph){
+void copyGraphToDevice(Graph*g, Graph**deviceGraph){
     HANDLE_ERROR(cudaMalloc((void**)deviceGraph, sizeof(Graph)));
-    HANDLE_ERROR(cudaMemcpy(deviceGraph, g, sizeof(Graph), cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy((void**)deviceGraph, (void*)g, sizeof(Graph), cudaMemcpyHostToDevice));
 
     HANDLE_ERROR(cudaMalloc((void**)&(deviceGraph->edges), sizeof(Edge) * g->numEdges));
     HANDLE_ERROR(cudaMalloc((void**)&(deviceGraph->verticeLastEdgeExclusive), sizeof(int) * g->size));
