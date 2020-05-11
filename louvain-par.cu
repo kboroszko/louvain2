@@ -670,7 +670,7 @@ int main(int argc, char **argv){
             verbose = 1;
         }
         fileName = argv[2];
-        min_gain = strtof(argv[4], NULL)
+        min_gain = strtof(argv[4], NULL);
     } else {
         printf("what is that gibberish?!\n");
         printUsage(argv[0]);
