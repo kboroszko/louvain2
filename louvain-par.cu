@@ -476,6 +476,14 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
 
         if(DEBUG){
+            printf("moves:\n");
+
+            for(int i=0; i<movesDone; i++){
+                Move m = moves[i];
+                printf("move %d from %d to %d \tgain:%f\n", m.vertice, cliques[m.vertice], m.toClique, m.gain);
+            }
+
+
             printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
         }
 
