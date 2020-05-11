@@ -707,7 +707,9 @@ int main(int argc, char **argv){
         if(DEBUG){
             printf("========= PHASE 2 ==================\n");
         }
-        phaseTwo(g, cliques);
+        if(iter > 1){
+            phaseTwo(g, cliques);
+        }
 //        printEdges(g);
         updateOldCliques(g, cliques);
         printf("modularity2:%f\n", modularity(g, cliques));

@@ -196,7 +196,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
                 float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot, m);
                 if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
                     if(DEBUG) {
-                        printf("%.8f > %.8f\n", deltaQ, minimum);
+//                        printf("%.8f > %.8f\n", deltaQ, minimum);
                         printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ);
                     }
                     changed = 1;
