@@ -392,7 +392,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     printf("alloc3 \n");
 
-    int maxNeighbours = thrust::reduce(deviceSizesPtr, deviceSizesPtr + g->size, (int) 0, thrust::maximum<int>());
+    int maxNeighbours = thrust::reduce(deviceSizes_ptr, deviceSizes_ptr + g->size, (int) 0, thrust::maximum<int>());
 
     printf("reduce \n");
 
