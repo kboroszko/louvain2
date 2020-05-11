@@ -12,6 +12,7 @@ extern "C" {
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
+#define DEBUG 1
 
 //__device__ float atomicAdd(float* address, float val)
 //{
@@ -274,6 +275,16 @@ __global__ void calculateCliqueSizes(Graph*g, int* cliques, int * cliqueSizes) {
     }
 }
 
+__global__ void calcNeighbours(Graph *g, int sizes){
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if(tid < g->size){
+        int edgesStart =  EDGES_IDX(g, vertice - 1);
+        int edgesEnd =  EDGES_IDX(g, vertice);
+        int numEdges = edgesEnd - edgesStart;
+        sizes[tid] = numEdges;
+    }
+}
+
 
 
 __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
@@ -368,8 +379,12 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     HANDLE_ERROR(cudaMalloc((void**) &movesDoneDevice, sizeof(int)));
     HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
+    thrust::device_vector<int> deviceSizes(g->size, (int) 0);
+    int * deviceSizesPtr = thrust::raw_pointer_cast(&deviceSizes[0]);
 
+    calcNeighbours<<<(g->size + 255)/256, 256>>>(g, deviceSizesPtr);
 
+    int maxNeighbours = thrust::reduce(deviceSizes.begin(), deviceSizes.end(), (int)0. thrust::maximum<int>())
 
     float m = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
 
@@ -377,7 +392,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     m = m/2;
 
     printf("calculated:\n");
-    printf("m=%f\n", m);
+    printf("m=%f\n, maxN=%d", m, maxNeighbours);
 
 //    if(minimum < 1){
 //        printf("exiting\n");
@@ -387,7 +402,6 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     float mod = modularity(g, cliques);
 
-    int maxNeighbours = 10; //TODO
 
 
     while(changed != 0 ){
@@ -424,10 +438,11 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
         //inaczej TODO
 
-        thrust::copy(deviceMoves.begin(), deviceMoves.end(), moves);
+//        thrust::copy(deviceMoves.begin(), deviceMoves.end(), moves);
 //        thrust::host_vector<int> H(deviceMoves.begin(), deviceMoves.end());
 //        for(int cnt = 0; cnt < )
-//        HANDLE_ERROR(cudaMemcpy( moves, deviceMoves, sizeof(int)*g->size, cudaMemcpyDeviceToHost));
+        Move * deviceMovesPtr = thrust::raw_pointer_cast(&deviceMoves[0]);
+        HANDLE_ERROR(cudaMemcpy( moves, deviceMovesPtr, sizeof(Move)*g->size, cudaMemcpyDeviceToHost));
 
 
 
@@ -468,6 +483,8 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         if(changed != 0) {
             HANDLE_ERROR(cudaMemcpy((void*)deviceCliques, (void*) cliques, sizeof(int)*g->size, cudaMemcpyHostToDevice));
         }
+
+        //distroy device graph
     }
     return iters;
 }
