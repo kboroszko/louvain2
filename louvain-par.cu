@@ -301,7 +301,7 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
     bestOutcomes[tid] = 0;
     int cliqueFrom = cliques[vertice];
     if(tid < numEdges){
-        Edge e = g->edges[tid];
+        Edge e = g->edges[edgesStart + tid];
         if(cliqueFrom != cliques[e.to]){
             int pretender = cliques[e.to];
             float deltaQ = dQDevice(g, vertice, cliques, pretender, sigmaTot, m, numEdges, edgesPtr);
@@ -323,7 +323,7 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
             }
         }
     }
-    if (tid==0){
+    if (tid==0 && bestOutcomes[0] > 0){
         int toClique = __float2int_rn(bestOutcomes[blockDim.x]);
         float gain =  bestOutcomes[0];
         int myMove = atomicAdd(nMoves, 1) - 1;

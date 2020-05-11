@@ -190,7 +190,6 @@ else
       BUILD_TYPE := release
 endif
 
-NVCCFLAGS += -g -G
 
 ALL_CCFLAGS :=
 ALL_CCFLAGS += $(NVCCFLAGS)
