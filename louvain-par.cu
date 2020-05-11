@@ -202,6 +202,32 @@ void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
 //    printf("graph init succeded\n");
 }
 
+
+__device__ float dQDevice(Graph*g, int vertice, int *cliques, int in, float* sigmaTot, float m, int numEdges, Edge* edges){
+
+    float ki = getKiDevice(numEdges, edges);
+    float kiin = getKiinDevice(g, vertice, cliques, in);
+    float EiwCiBezi = getKiinDevice(g, vertice, cliques, cliques[vertice]);
+    float aciBezi= sigmaTot[cliques[vertice]] - ki;
+    float acj = sigmaTot[in];
+    float part1 = (kiin - EiwCiBezi)/m;
+    float part2 = ki * (aciBezi - acj)/(2 * m * m);
+    return  part1+part2;
+}
+
+__device__ float getKiinDevice(Graph *g, int vertice, int* cliques, int in ){
+    float sum=0;
+    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
+        Edge e = g->edges[i];
+        if(e.to != vertice && cliques[e.to] == in){
+            sum+= e.value;
+        }
+    }
+    return sum;
+}
+
+
+
 void copyArrayToDevice(int * arr, int size, int** deviceArray){
     HANDLE_ERROR(cudaMalloc((void**) deviceArray, sizeof(int) * size));
     HANDLE_ERROR(cudaMemcpy((void*) *deviceArray, (void*)arr, sizeof(int) * size, cudaMemcpyHostToDevice));
@@ -252,14 +278,13 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
     bestOutcomes[tid] = 0;
     int cliqueFrom = cliques[vertice];
     if(tid < numEdges){
-        Edge e = g->edges + tid;
+        Edge e = g->edges[tid];
         if(cliqueFrom != cliques[e.to]){
             int pretender = cliques[e.to];
             bestOutcomes[tid + blockDim.x] = __int2float_rn(pretender);
             bestOutcomes[tid] = dQDevice(g, vertice, cliques, pretender, sigmaTot, m, numEdges, edgesPtr);
         }
     }
-    __syncthreads()
     //reduce within a block
     for (int stride=1;stride<blockDim.x;stride*=2)
     {
@@ -283,28 +308,7 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
 }
 
 
-__device__ float dQDevice(Graph*g, int vertice, int *cliques, int in, float* sigmaTot, float m, int numEdges, Edge* edges){
 
-    float ki = getKiDevice(numEdges, edges);
-    float kiin = getKiinDevice(g, vertice, cliques, in);
-    float EiwCiBezi = getKiinDevice(g, vertice, cliques, cliques[vertice]);
-    float aciBezi= sigmaTot[cliques[vertice]] - ki;
-    float acj = sigmaTot[in];
-    float part1 = (kiin - EiwCiBezi)/m;
-    float part2 = ki * (aciBezi - acj)/(2 * m * m);
-    return  part1+part2;
-}
-
-__device__ float getKiinDevice(Graph *g, int vertice, int* cliques, int in ){
-    float sum=0;
-    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
-        Edge e = g->edges[i];
-        if(e.to != vertice && cliques[e.to] == in){
-            sum+= e.value;
-        }
-    }
-    return sum;
-}
 
 
 
