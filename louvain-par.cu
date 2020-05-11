@@ -659,6 +659,7 @@ int main(int argc, char **argv){
 
     MData * dat = readData(fileName);
 
+    Graph *initial = initGraph(dat);
     Graph *g = initGraph(dat);
     destroyMData(dat);
 
@@ -707,7 +708,7 @@ int main(int argc, char **argv){
         printCliques(g->size, cliques);
     }
 
-    printf("modularity1:%f\n", modularity(g, cliques));
+    printf("modularity1:%f\n", modularity(initial, cliques));
 
     free(cliques);
 
