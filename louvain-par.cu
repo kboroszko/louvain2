@@ -413,8 +413,10 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         Move * moves = (Move*) calloc(nMoves, sizeof(Move));
 
         //inaczej TODO
-        thrust::host_ptr<Move> movesPtr(moves);
-        thrust::copy(deviceMoves.begin(), deviceMoves.end(), movesPtr.begin());
+
+        thrust::copy(deviceMoves.begin(), deviceMoves.end(), moves);
+//        thrust::host_vector<int> H(deviceMoves.begin(), deviceMoves.end());
+//        for(int cnt = 0; cnt < )
 //        HANDLE_ERROR(cudaMemcpy( moves, deviceMoves, sizeof(int)*g->size, cudaMemcpyDeviceToHost));
 
 
