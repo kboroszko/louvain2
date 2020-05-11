@@ -35,7 +35,8 @@
 
 # Location of the CUDA Toolkit
 CUDA_PATH ?= "/usr/local/cuda"
-dbg=1
+#set to 1 for debug
+dbg=0
 ##############################
 # start deprecated interface #
 ##############################

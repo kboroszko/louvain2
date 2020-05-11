@@ -419,6 +419,8 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     while(changed != 0 ){
 
+        recalcSigmaTotPar<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceSigmaTot, deviceCliques);
+
         Move empty = {.vertice=0,.toClique=0,.gain=0};
 
 
