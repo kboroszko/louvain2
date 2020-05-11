@@ -28,7 +28,7 @@ float dQ(Graph*g, int vertice, int *clliques, int in, float* sigma, float m);
 
 int phaseOne(Graph *g, int *cliques, float minimum, float threshold);
 
-int moveValid(int from, int to, int* cliqueSizes);
+
 
 void phaseTwo(Graph *g, int *cliques);
 

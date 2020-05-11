@@ -6,6 +6,8 @@
 #include "louvain.h"
 #include "graph-utils.h"
 
+int moveValid(int from, int to, int* cliqueSizes);
+
 float getKi(Graph *g, int vertice){
     float sum=0;
     for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){

@@ -31,6 +31,8 @@ extern "C" {
 //    return __int_as_float(old);
 //}
 
+int moveValid(int from, int to, int* cliqueSizes);
+
 float getKi(Graph *g, int vertice){
     float sum=0;
     for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
@@ -237,7 +239,7 @@ __global__ void calculateCliqueSizes(Graph*g, int* cliques, int * cliqueSizes) {
 
 
 __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
-        thrust::device_vector<Move> moves, float m, float* sigmaTot
+        thrust::device_vector<Move> moves, float m, float* sigmaTot,
         float minimum, int * nMoves){
     extern __shared__ float bestOutcomes[];
     int vertice = blockIdx.x;
