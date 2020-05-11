@@ -287,7 +287,7 @@ __global__ void calcNeighbours(Graph *g, int *sizes){
 
 
 
-__global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
+__global__ void ves(Graph *g, int* cliques, int*cliqueSizes,
         Move* moves, float m, float* sigmaTot,
         float minimum, int * nMoves){
     extern __shared__ float bestOutcomes[];
@@ -317,7 +317,7 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
     {
         __syncthreads();
         if (tid%(2*stride)==0){
-            if(bestOutcomes[tid] < bestOutcomes[tid+stride]){
+            if(tid+stride < blockDim.x && bestOutcomes[tid] < bestOutcomes[tid+stride]){
                 bestOutcomes[tid] = bestOutcomes[tid+stride];
                 bestOutcomes[tid + blockDim.x] = bestOutcomes[tid + blockDim.x + stride];
             }
@@ -645,7 +645,6 @@ int main(int argc, char **argv){
     Graph *g = initGraph(dat);
     destroyMData(dat);
 
-    sortEdges(g);
 
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
