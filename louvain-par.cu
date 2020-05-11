@@ -31,7 +31,7 @@ extern "C" {
 //    return __int_as_float(old);
 //}
 
-int moveValid(int from, int to, int* cliqueSizes);
+__device__ int moveValid(int from, int to, int* cliqueSizes);
 
 float getKi(Graph *g, int vertice){
     float sum=0;
