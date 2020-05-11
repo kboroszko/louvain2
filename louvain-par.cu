@@ -275,8 +275,9 @@ __global__ void calculateCliqueSizes(Graph*g, int* cliques, int * cliqueSizes) {
     }
 }
 
-__global__ void calcNeighbours(Graph *g, int sizes){
+__global__ void calcNeighbours(Graph *g, int *sizes){
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    int vertice = tid;
     if(tid < g->size){
         int edgesStart =  EDGES_IDX(g, vertice - 1);
         int edgesEnd =  EDGES_IDX(g, vertice);
