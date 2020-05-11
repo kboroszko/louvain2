@@ -11,6 +11,7 @@ extern "C" {
 #include <thrust/fill.h>
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
+#include <thrust/sort.h>
 
 //__device__ float atomicAdd(float* address, float val)
 //{
@@ -144,18 +145,8 @@ float previewModularity(Graph * g, int*newCliques, Move* moves, int nMoves, int 
     return newMod;
 }
 
-float dQ(Graph*g, int vertice, int *cliques, int in, float* sigmaTot, float m){
-    float ki = getKi(g, vertice);
-    float kiin = getKiin(g, vertice, cliques, in);
-    float EiwCiBezi = getKiin(g, vertice, cliques, cliques[vertice]);
-    float aciBezi= sigmaTot[cliques[vertice]] - ki;
-    float acj = sigmaTot[in];
-    float part1 = (kiin - EiwCiBezi)/m;
-    float part2 = ki * (aciBezi - acj)/(2 * m * m);
-    return  part1+part2;
-}
 
-int moveValid(int from, int to, int* cliqueSizes){
+__device__ int moveValid(int from, int to, int* cliqueSizes){
     if(from == to){
         return 0;
     }
@@ -191,13 +182,13 @@ void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
     HANDLE_ERROR(cudaMalloc((void**) &edgesPtr, sizeof(Edge) * g->numEdges));
     HANDLE_ERROR(cudaMalloc((void**) &vertPtr, sizeof(int) * g->size));
 
-    printf("graph tables malloc succeded\n");
+//    printf("graph tables malloc succeded\n");
 
 
     HANDLE_ERROR(cudaMemcpy((void*) edgesPtr, (void*)g->edges, sizeof(Edge) * g->numEdges, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy((void*) vertPtr, (void*)g->verticeLastEdgeExclusive, sizeof(int) * g->size, cudaMemcpyHostToDevice));
 
-    printf("copying succeded\n");
+//    printf("copying succeded\n");
 
 
     HANDLE_ERROR(cudaMalloc((void**)deviceGraphPtr, sizeof(Graph)));
@@ -206,7 +197,7 @@ void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
 
     HANDLE_ERROR(cudaMemcpy((void*)*deviceGraphPtr, (void*)&gr, sizeof(Graph), cudaMemcpyHostToDevice));
 
-    printf("graph init succeded\n");
+//    printf("graph init succeded\n");
 }
 
 void copyArrayToDevice(int * arr, int size, int** deviceArray){
@@ -220,62 +211,98 @@ void copyFloatArrayToDevice(float * arr, int size, float** deviceArray){
 }
 
 __global__ void recalcSigmaTotPar(Graph*g, float* sigmaTot, int* cliques) {
-    int tid = threadIdx.x;
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
     int vertice = tid;
+    if(tid < g->size){ // there is a chance that a whole block except one thread will be stuck but oh, well
+        int clique = cliques[vertice];
 
-    int clique = cliques[vertice];
+        int edgesStart =  EDGES_IDX(g, vertice - 1);
+        int edgesEnd =  EDGES_IDX(g, vertice);
+        Edge * edgesPtr = g->edges + edgesStart;
+        int numEdges = edgesEnd - edgesStart;
+        float ki = getKiDevice(numEdges, edgesPtr);
+        atomicAdd(sigmaTot + clique, ki);
+    }
+}
 
+__global__ void calculateCliqueSizes(Graph*g, int* cliques, int * cliqueSizes) {
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if(tid < g->size){
+        int vertice = tid;
+        int clique = cliques[vertice];
+        atomicAdd(cliqueSizes + clique, 1);
+    }
+}
+
+
+
+__global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
+        thrust::device_vector<Move> moves, float m, float* sigmaTot
+        float minimum, int * nMoves){
+    extern __shared__ float bestOutcomes[];
+    int vertice = blockIdx.x;
     int edgesStart =  EDGES_IDX(g, vertice - 1);
     int edgesEnd =  EDGES_IDX(g, vertice);
     Edge * edgesPtr = g->edges + edgesStart;
     int numEdges = edgesEnd - edgesStart;
-    float ki = getKiDevice(numEdges, edgesPtr);
-    atomicAdd(sigmaTot + clique, ki);
-}
-
-__global__ void calculateCliqueSizes(Graph*g, int* cliques, int * cliqueSizes) {
     int tid = threadIdx.x;
-    int vertice = tid; //TODO
-    int clique = cliques[vertice];
-    atomicAdd(cliqueSizes + clique, 1);
+    bestOutcomes[tid + blockDim.x] = -1.f;
+    bestOutcomes[tid] = 0;
+    int cliqueFrom = cliques[vertice];
+    if(tid < numEdges){
+        Edge e = g->edges + tid;
+        if(cliqueFrom != cliques[e.to]){
+            int pretender = cliques[e.to];
+            bestOutcomes[tid + blockDim.x] = __int2float_rn(pretender);
+            bestOutcomes[tid] = dQDevice(g, vertice, cliques, pretender, sigmaTot, m, numEdges, edgesPtr);
+        }
+    }
+    __syncthreads()
+    //reduce within a block
+    for (int stride=1;stride<blockDim.x;stride*=2)
+    {
+        __syncthreads();
+        if (tid%(2*stride)==0){
+            if(bestOutcomes[tid] < bestOutcomes[tid+stride]){
+                bestOutcomes[tid] = bestOutcomes[tid+stride];
+                bestOutcomes[tid + blockDim.x] = bestOutcomes[tid + blockDim.x + stride];
+            }
+        }
+    }
+    if (tid==0){
+        int toClique = __float2int_rn(bestOutcomes[blockDim.x]);
+        float gain =  bestOutcomes[0];
+        if(gain > minimum && moveValid(cliqueFrom, toClique, cliqueSizes)){
+            int myMove = atomicAdd(nMoves, 1) - 1;
+            Move m = {.vertice=vertice, .toClique = toClique, .gain=gain};
+            moves[myMove] = m;
+        }
+    }
 }
 
 
+__device__ float dQDevice(Graph*g, int vertice, int *cliques, int in, float* sigmaTot, float m, int numEdges, Edge* edges){
 
+    float ki = getKiDevice(numEdges, edges);
+    float kiin = getKiinDevice(g, vertice, cliques, in);
+    float EiwCiBezi = getKiinDevice(g, vertice, cliques, cliques[vertice]);
+    float aciBezi= sigmaTot[cliques[vertice]] - ki;
+    float acj = sigmaTot[in];
+    float part1 = (kiin - EiwCiBezi)/m;
+    float part2 = ki * (aciBezi - acj)/(2 * m * m);
+    return  part1+part2;
+}
 
-
-
-
-//void recalcSigmaTot(Graph*g, float* sigmaTot, int* cliques){
-//
-//    for(int i=0; i < g->size; i++){
-//        printf("[%d]=%f\n",i, sigmaTot[i]);
-//    }
-//
-//    Graph * deviceGraph;
-//    copyGraphToDevice(g, &deviceGraph);
-//
-//    float * deviceSigmaTot;
-//    copyFloatArrayToDevice(sigmaTot, g->size, &deviceSigmaTot);
-//
-//    int * deviceCliques;
-//    copyArrayToDevice(cliques, g->size, &deviceCliques);
-//
-//    printf("copied\n");
-//
-//    thrust::device_ptr<float> dev_ptr(deviceSigmaTot);
-//    thrust::fill(dev_ptr, dev_ptr + g->size, (float) 0);
-//    printf("filled\n");
-//    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, deviceSigmaTot, deviceCliques);
-//
-//    printf("calculated\n");
-//
-//    HANDLE_ERROR(cudaMemcpy(sigmaTot ,deviceSigmaTot, sizeof(float) * g->size, cudaMemcpyDeviceToHost));
-//    for(int i=0; i < g->size; i++){
-//        printf("[%d]=%f\n",i, sigmaTot[i]);
-//    }
-//
-//}
+__device__ float getKiinDevice(Graph *g, int vertice, int* cliques, int in ){
+    float sum=0;
+    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
+        Edge e = g->edges[i];
+        if(e.to != vertice && cliques[e.to] == in){
+            sum+= e.value;
+        }
+    }
+    return sum;
+}
 
 
 
@@ -309,7 +336,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     int * deviceCliques;
     copyArrayToDevice(cliques, g->size, &deviceCliques);
 
-    recalcSigmaTotPar<<<1,g->size>>>(deviceGraph, deviceSigmaTot, deviceCliques); //TODO better grouping
+    recalcSigmaTotPar<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceSigmaTot, deviceCliques);
 
     int * deviceCliqueSizes;
     HANDLE_ERROR(cudaMalloc((void**) &deviceCliqueSizes, sizeof(int) * g->size));
@@ -317,12 +344,17 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     thrust::fill(deviceCliqueSizes_ptr, deviceCliqueSizes_ptr + g->size, (int) 0);
 
     int nMoves = g->size;
-    thrust::device_vector<Move> deviceMoves(nMoves);
 
     int movesDone = 0;
+    int * movesDoneDevice;
+    HANDLE_ERROR(cudaMalloc((void**) &movesDoneDevice, sizeof(int)));
+    HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
+
+
+
+
     float m = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
 
-    calculateCliqueSizes<<<1,g->size>>>(deviceGraph, deviceCliques, deviceCliqueSizes); //TODO better grouping
 
     m = m/2;
 
@@ -334,81 +366,88 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         exit(10);
 
     }
-//    float mod = modularity(g, cliques);
-//
-//
-//    while(changed != 0 ){
-//        if(DEBUG){
-//            printf("---------------------------- small iter %d ------------------------------------------\n", iters);
-//        }
-//        changed = 0;
-//        iters++;
-//        movesDone = 0;
-//        for(int vert=0; vert < g->size; vert++){
-//            int pretender = bestClique(g, vert, cliques, sigmaTot,m);
-//            if(pretender != -1){
-//                float deltaQ = dQ(g, vert, cliques, pretender, sigmaTot, m);
-//                if(deltaQ > minimum && moveValid(cliques[vert],pretender, cliqueSizes)){
-//                    if(DEBUG) {
-//                        printf("%.8f > %.8f\n", deltaQ, minimum);
-//                        printf("gonna move %2d from %2d to %2d   gain: %f \n", vert, cliques[vert], pretender, deltaQ);
-//                    }
-//                    changed = 1;
-//                    int oldClique = cliques[vert];
-//                    Move * m = moves + movesDone;
-//                    m->vertice = vert;
-//                    m->gain = deltaQ;
-//                    m->toClique = pretender;
-//                    movesDone++;
-//                    cliqueSizes[pretender] += 1;
-//                    cliqueSizes[oldClique] -= 1;
-//                }
-//            }
-//        }
-//        if(DEBUG){
-//            int* newCliques = (int*) malloc(sizeof(int) * g->size);
-//            memcpy(newCliques, cliques, sizeof(int) * g->size);
-//            float newMod = previewModularity(g, newCliques, moves, movesDone, movesDone, 0);
-//            printf("modularity gain if all applied=%f\n", newMod - mod);
-//            free(newCliques);
-//        }
-//        int movesToApply = calculateMovesToApply(1, movesDone, nMoves);
-//
-//        int* newCliques = (int*) malloc(sizeof(int) * g->size);
-//        memcpy(newCliques, cliques, sizeof(int) * g->size);
-//        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
-//
-//        if(DEBUG){
-//            printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
-//        }
-//
-//
-//        if(movesDone > 0){
-//            float bestdQ = moves[0].gain;
-//            int movesIter = 2;
-//            while((newMod - mod < threshold) && (movesToApply > 1 || bestdQ > threshold)){
-//                movesToApply = calculateMovesToApply(movesIter, movesDone, nMoves);
-//                memcpy(newCliques, cliques, sizeof(int) * g->size);
-//                newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
-//                movesIter++;
-//            }
-//            if (newMod - mod > threshold) {
-//                memcpy(cliques, newCliques, sizeof(int) * g->size);
-//                recalcSigmaTot(g, sigmaTot, cliques);
-//                mod = newMod;
-////                printf("%f, \n", modularity(g, cliques));
-//            }
-//            if(movesToApply == 1 && bestdQ < threshold){
-//                changed = 0;
-//            }
-//        } else {
-//            changed = 0;
-//        }
-//        free(newCliques);
-//    }
-//    free(cliqueSizes);
-//    free(moves);
-//    free(sigmaTot);
+
+    float mod = modularity(g, cliques);
+
+    int maxNeighbours = 10; //TODO
+
+
+    while(changed != 0 ){
+
+        Move empty = {.vertice=0,.toClique=0,.gain=0};
+        thrust::device_vector<Move> deviceMoves(nMoves, empty);
+
+        calculateCliqueSizes<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceCliques, deviceCliqueSizes);
+
+        if(DEBUG){
+            printf("---------------------------- small iter %d ------------------------------------------\n", iters);
+        }
+        changed = 0;
+        iters++;
+        movesDone = 0;
+        HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
+
+
+        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(
+                deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum,
+                );
+
+        HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
+
+        if(movesDone > 0){
+            changed = 1;
+        }
+        //sort moves //TODO
+        thrust::stable_sort(deviceMoves.begin(),deviceMoves.end(), compareMoves);
+
+
+        // wydobyć cliques, moves
+        HANDLE_ERROR(cudaMemcpy((void*) cliques, (void*)deviceCliques, sizeof(int)*g->size, cudaMemcpyDeviceToHost));
+
+        Move * moves = (Move*) calloc(nMoves, sizeof(Move));
+
+        HANDLE_ERROR(cudaMemcpy((void*) moves, (void*)deviceMoves, sizeof(int)*g->size, cudaMemcpyDeviceToHost));
+
+
+
+        int movesToApply = calculateMovesToApply(1, movesDone, nMoves);
+
+        int* newCliques = (int*) malloc(sizeof(int) * g->size);
+        memcpy(newCliques, cliques, sizeof(int) * g->size);
+        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
+
+        if(DEBUG){
+            printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
+        }
+
+
+        if(movesDone > 0){
+            float bestdQ = moves[0].gain;
+            int movesIter = 2;
+            while((newMod - mod < threshold) && (movesToApply > 1 || bestdQ > threshold)){
+                movesToApply = calculateMovesToApply(movesIter, movesDone, nMoves);
+                memcpy(newCliques, cliques, sizeof(int) * g->size);
+                newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
+                movesIter++;
+            }
+            if (newMod - mod > threshold) {
+                memcpy(cliques, newCliques, sizeof(int) * g->size);
+                mod = newMod;
+//                printf("%f, \n", modularity(g, cliques));
+            }
+            if(movesToApply == 1 && bestdQ < threshold){
+                changed = 0;
+            }
+        } else {
+            changed = 0;
+        }
+
+        free(moves);
+        free(newCliques);
+        if(changed != 0) {
+            HANDLE_ERROR(cudaMemcpy((void*)deviceCliques, (void*) cliques, sizeof(int)*g->size, cudaMemcpyHostToDevice));
+        }
+    }
     return iters;
 }
 
