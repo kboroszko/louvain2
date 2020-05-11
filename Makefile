@@ -239,7 +239,7 @@ endif
 # Target rules
 all: build
 
-build: louvain-par
+build: gpulouvain
 
 check.deps:
 ifeq ($(SAMPLE_ENABLED),0)
