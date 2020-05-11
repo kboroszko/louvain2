@@ -458,7 +458,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         Move * moves = (Move*) calloc(nMoves, sizeof(Move));
 
         //wydobyć moves
-        HANDLE_ERROR(cudaMemcpy( moves, deviceMovesPtr, sizeof(Move)*g->size, cudaMemcpyDeviceToHost));
+        HANDLE_ERROR(cudaMemcpy( moves, deviceMovesPtr, sizeof(Move)*nMoves, cudaMemcpyDeviceToHost));
 
         if(DEBUG){
             printf("moves moved to host\n");
