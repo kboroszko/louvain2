@@ -690,7 +690,7 @@ int main(int argc, char **argv){
         iter = phaseOne(g, cliques, minimum, threshold);
 
 //        printCliques(g->size, cliques);
-
+        printf("modularity3:%f\n", modularity(g, cliques));
         if(DEBUG){
             printf("========= PHASE 2 ==================\n");
         }
@@ -700,15 +700,14 @@ int main(int argc, char **argv){
 //        printf("modularity:%f\n", modularity(g, cliques));
 //        printCliques(g->size, cliques);
         bigLoopIteration += 1;
+        printf("modularity2:%f\n", modularity(g, cliques));
     }
     printf("converged after %d iterations!\n", bigLoopIteration+1);
     if(verbose != 0){
         printCliques(g->size, cliques);
     }
 
-
-    mod = modularity(g, cliques);
-    printf("modularity:%f\n", mod);
+    printf("modularity1:%f\n", modularity(g, cliques));
 
     free(cliques);
 
