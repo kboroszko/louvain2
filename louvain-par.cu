@@ -277,7 +277,7 @@ __global__ void calculateCliqueSizes(Graph*g, int* cliques, int * cliqueSizes) {
 
 
 __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
-        thrust::device_vector<Move> moves, float m, float* sigmaTot,
+        Move* moves, float m, float* sigmaTot,
         float minimum, int * nMoves){
     extern __shared__ float bestOutcomes[];
     int vertice = blockIdx.x;
@@ -405,8 +405,8 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         movesDone = 0;
         HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
-
-        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
+        Move* deviceMovesPtr = thrust::raw_pointer_cast(&deviceMoves[0]);
+        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, , m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
 
