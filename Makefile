@@ -184,12 +184,13 @@ endif
 
 # Debug build flags
 ifeq ($(dbg),1)
-      echo "DEBUG"
       NVCCFLAGS += -g -G
       BUILD_TYPE := debug
 else
       BUILD_TYPE := release
 endif
+
+NVCCFLAGS += -g -G
 
 ALL_CCFLAGS :=
 ALL_CCFLAGS += $(NVCCFLAGS)
