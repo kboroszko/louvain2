@@ -35,7 +35,7 @@
 
 # Location of the CUDA Toolkit
 CUDA_PATH ?= "/usr/local/cuda"
-
+dbg=1
 ##############################
 # start deprecated interface #
 ##############################
@@ -184,6 +184,7 @@ endif
 
 # Debug build flags
 ifeq ($(dbg),1)
+      echo "DEBUG"
       NVCCFLAGS += -g -G
       BUILD_TYPE := debug
 else
