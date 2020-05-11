@@ -406,7 +406,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
         Move* deviceMovesPtr = thrust::raw_pointer_cast(&deviceMoves[0]);
-        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, , m,deviceSigmaTot, minimum, movesDoneDevice);
+        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMovesPtr, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
 
