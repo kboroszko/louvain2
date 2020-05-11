@@ -388,7 +388,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     printf("alloc2 \n");
 
-    calcNeighbours<<<(g->size + 255)/256, 256>>>(g, deviceSizesPtr);
+    calcNeighbours<<<(g->size + 255)/256, 256>>>(g, deviceSizes);
 
     printf("alloc3 \n");
 
@@ -502,7 +502,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             HANDLE_ERROR(cudaMemcpy((void*)deviceCliques, (void*) cliques, sizeof(int)*g->size, cudaMemcpyHostToDevice));
         }
 
-        //distroy device graph
+        //distroy all ptrs
     }
     return iters;
 }
