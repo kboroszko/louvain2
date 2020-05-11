@@ -662,7 +662,7 @@ int cmpPair(const void *a, const void *b){
     if(ap->clique > bp->clique){
         return 1;
     } else if(ap->clique < bp->clique){
-        return -1
+        return -1;
     } else if(ap->vertice > bp->vertice){
         return 1;
     }else if(ap->vertice < bp->vertice){
@@ -680,11 +680,10 @@ void printCommunities(Graph *g, int *cliques){
     }
     qsort(pairs, g->size, sizeof(Pair), cmpPair);
     int counter = 0;
-    int first = 1;
     while(counter < g->size){
         int last = pairs[counter].clique;
-        while(pairs[counter].clique == last){
-            printf("%d ", pairs[i].vertice);
+        while(counter < g->size && pairs[counter].clique == last){
+            printf("%d ", pairs[counter].vertice);
             counter++;
         }
         printf("\n");
