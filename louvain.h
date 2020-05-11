@@ -8,7 +8,7 @@
 #define LOUVAIN2_LOUVAIN_H
 
 #ifndef DEBUG
-#define DEBUG 0 //TODO
+#define DEBUG 1 //TODO
 #endif
 
 typedef struct {

@@ -12,7 +12,6 @@ extern "C" {
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
-#define DEBUG 1
 
 //__device__ float atomicAdd(float* address, float val)
 //{
@@ -385,7 +384,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     calcNeighbours<<<(g->size + 255)/256, 256>>>(g, deviceSizesPtr);
 
-    int maxNeighbours = thrust::reduce(deviceSizes.begin(), deviceSizes.end(), (int)0, thrust::maximum<int>());
+    int maxNeighbours = thrust::reduce(deviceSizesPtr, deviceSizesPtr + g->size, (int)0, thrust::maximum<int>());
 
     float m = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
 
