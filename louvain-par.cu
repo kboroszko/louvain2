@@ -451,21 +451,18 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         //sort moves //TODO
 //        thrust::stable_sort(deviceMoves.begin(),deviceMoves.end(), compareMovesThrust);
 
-
-        // wydobyć, moves
-//        HANDLE_ERROR(cudaMemcpy((void*) cliques, (void*)deviceCliques, sizeof(int)*g->size, cudaMemcpyDeviceToHost));
+        if(DEBUG){
+            printf("moves sorted\n");
+        }
 
         Move * moves = (Move*) calloc(nMoves, sizeof(Move));
 
-        //inaczej TODO
-
-//        thrust::copy(deviceMoves.begin(), deviceMoves.end(), moves);
-//        thrust::host_vector<int> H(deviceMoves.begin(), deviceMoves.end());
-//        for(int cnt = 0; cnt < )
-//        Move * deviceMovesPtr = thrust::raw_pointer_cast(deviceMoves);
+        //wydobyć moves
         HANDLE_ERROR(cudaMemcpy( moves, deviceMovesPtr, sizeof(Move)*g->size, cudaMemcpyDeviceToHost));
 
-
+        if(DEBUG){
+            printf("moves moved to host\n");
+        }
 
         int movesToApply = calculateMovesToApply(1, movesDone, nMoves);
 
