@@ -651,6 +651,47 @@ void printUsage(char * name){
     printf("#     -v    verbose mode, printing communities\n");
 }
 
+typedef struct {
+    int clique;
+    int vertice;
+} Pair;
+
+int cmpPair(const void *a, const void *b){
+    Pair* ap = (Pair*) a;
+    Pair* bp = (Pair*) b;
+    if(ap->clique > bp->clique){
+        return 1;
+    } else if(ap->clique < bp->clique){
+        return -1
+    } else if(ap->vertice > bp->vertice){
+        return 1;
+    }else if(ap->vertice < bp->vertice){
+        return -1;
+    }else{
+        return 0;
+    }
+}
+
+void printCommunities(Graph *g, int *cliques){
+    Pair * pairs = (Pair*) malloc(sizeof(pairs) * g->size);
+    for(int i=0; i<g->size; i++){
+        Pair p = {.vertice = i, .clique = cliques[i]};
+        pairs[i] =  p;
+    }
+    qsort(pairs, g->size, sizeof(Pair), cmpPair);
+    int counter = 0;
+    int first = 1;
+    while(counter < g->size){
+        int last = pairs[counter].clique;
+        while(pairs[counter].clique == last){
+            printf("%d ", pairs[i].vertice);
+            counter++;
+        }
+        printf("\n");
+    }
+}
+
+
 
 int main(int argc, char **argv){
     char * fileName;
@@ -742,9 +783,15 @@ int main(int argc, char **argv){
     float elapsedTime;
     HANDLE_ERROR(cudaEventElapsedTime(&elapsedTime, start, stop));
 
+
+
     printf("%f\n", modularity(g, cliques));
 
     printf("%f %f\n", elapsedTime, elapsedTime);
+
+    if(verbose != 0){
+        printCommunities(g, cliques);
+    }
 
     HANDLE_ERROR(cudaEventDestroy(start));
     HANDLE_ERROR(cudaEventDestroy(stop));
