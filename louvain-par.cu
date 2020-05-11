@@ -415,6 +415,9 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     float mod = modularity(g, cliques);
 
+    if(DEBUG){
+        printf("modularity: %f\n", mod);
+    }
 
 
     while(changed != 0 ){
@@ -446,8 +449,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
-        movesDone = movesDone == 1 ? 1 : movesDone -1;
-
+        movesDone -= 1;
 
         if(DEBUG){
             printf("calculated %d moves\n", movesDone);
@@ -521,12 +523,9 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         cudaFree(deviceMoves);
         free(moves);
         free(newCliques);
-        if(changed != 0) {
-            HANDLE_ERROR(cudaMemcpy((void*)deviceCliques, (void*) cliques, sizeof(int)*g->size, cudaMemcpyHostToDevice));
-        }
 
-        //distroy all ptrs
     }
+    //distroy all ptrs and graph
     return iters;
 }
 
