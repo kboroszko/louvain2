@@ -702,7 +702,7 @@ int main(int argc, char **argv){
         minimum = minimum < threshold/20.f ? threshold/20.f : minimum;
 //        printf("min:%f\n", minimum);
         iter = phaseOne(g, cliques, minimum, threshold);
-
+        printf("modularity3:%f\n", modularity(g, cliques));
 //        printCliques(g->size, cliques);
         if(DEBUG){
             printf("========= PHASE 2 ==================\n");
@@ -710,6 +710,7 @@ int main(int argc, char **argv){
         phaseTwo(g, cliques);
 //        printEdges(g);
         updateOldCliques(g, cliques);
+        printf("modularity2:%f\n", modularity(g, cliques));
 //        printf("modularity:%f\n", modularity(g, cliques));
 //        printCliques(g->size, cliques);
         bigLoopIteration += 1;
@@ -721,7 +722,7 @@ int main(int argc, char **argv){
         printCliques(g->size, cliques);
     }
 
-    printf("modularity:%f\n", modularity(initial, cliques));
+    printf("modularity1:%f\n", modularity(g, cliques));
 
     free(cliques);
 
