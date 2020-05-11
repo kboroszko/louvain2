@@ -487,12 +487,17 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
                 movesToApply = calculateMovesToApply(movesIter, movesDone, nMoves);
                 memcpy(newCliques, cliques, sizeof(int) * g->size);
                 newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
+
+                if(DEBUG){
+                    printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
+                }
+
                 movesIter++;
             }
             if (newMod - mod > threshold) {
                 memcpy(cliques, newCliques, sizeof(int) * g->size);
                 mod = newMod;
-//                printf("%f, \n", modularity(g, cliques));
+                printf("modularity: %f\n", modularity(g, cliques));
             }
             if(movesToApply == 1 && bestdQ < threshold){
                 changed = 0;
