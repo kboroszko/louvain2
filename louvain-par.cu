@@ -419,8 +419,6 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     while(changed != 0 ){
 
-        recalcSigmaTotPar<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceSigmaTot, deviceCliques);
-
         Move empty = {.vertice=0,.toClique=0,.gain=0};
 
 
@@ -431,8 +429,10 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
         HANDLE_ERROR(cudaMemcpy(deviceCliques, cliques, sizeof(int) * g->size, cudaMemcpyHostToDevice));
 
-
         calculateCliqueSizes<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceCliques, deviceCliqueSizes);
+
+        thrust::fill(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0);
+        recalcSigmaTotPar<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceSigmaTot, deviceCliques);
 
         if(DEBUG){
             printf("---------------------------- small iter %d ------------------------------------------\n", iters);
@@ -446,7 +446,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
-//        movesDone -= 1;
+        movesDone = movesDone == 1 ? 1 : movesDone -1;
 
 
         if(DEBUG){
