@@ -127,6 +127,16 @@ int compareMoves( const void * a, const void * b){
     }
 }
 
+int compareMovesThrust( Move a, Move b){
+    if(a.gain > b.gain) {
+        return -1;
+    } else if(b.gain > a.gain){
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 void applyBestMoves(int* cliques, Move* moves ,int nMoves, int nBest, int sort){
     if(nMoves == 0){
         return;
@@ -404,7 +414,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             changed = 1;
         }
         //sort moves //TODO
-        thrust::stable_sort(deviceMoves.begin(),deviceMoves.end(), compareMoves);
+        thrust::stable_sort(deviceMoves.begin(),deviceMoves.end(), compareMovesThrust);
 
 
         // wydobyć cliques, moves
@@ -425,7 +435,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
         int* newCliques = (int*) malloc(sizeof(int) * g->size);
         memcpy(newCliques, cliques, sizeof(int) * g->size);
-        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 1);
+        float newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
 
         if(DEBUG){
             printf("modularity gain if %d applied=%f\n",movesToApply, newMod - mod);
