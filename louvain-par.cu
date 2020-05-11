@@ -645,6 +645,7 @@ int main(int argc, char **argv){
     Graph *g = initGraph(dat);
     destroyMData(dat);
 
+    sortEdges(g);
 
 
     int* cliques = (int*) malloc(sizeof(int) * g->size);
