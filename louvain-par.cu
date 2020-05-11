@@ -420,7 +420,12 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     while(changed != 0 ){
 
         Move empty = {.vertice=0,.toClique=0,.gain=0};
-        thrust::device_vector<Move> deviceMoves(nMoves, empty);
+
+
+        Move * deviceMoves;
+        HANDLE_ERROR(cudaMalloc((void**) &deviceMoves, sizeof(Move) * nMoves));
+        thrust::device_ptr<Move> deviceMoves_ptr(deviceMoves);
+        thrust::fill(deviceMoves_ptr, deviceMoves_ptr + nMoves, empty);
 
         HANDLE_ERROR(cudaMemcpy(deviceCliques, cliques, sizeof(int) * g->size, cudaMemcpyHostToDevice));
 
@@ -435,8 +440,8 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         movesDone = 0;
         HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
-        Move* deviceMovesPtr = thrust::raw_pointer_cast(&deviceMoves[0]);
-        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMovesPtr, m,deviceSigmaTot, minimum, movesDoneDevice);
+
+        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
 
@@ -455,10 +460,10 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             printf("moves sorted\n");
         }
 
-        Move * moves = (Move*) calloc(nMoves, sizeof(Move));
+        Move * moves = (Move*) malloc(nMoves * sizeof(Move));
 
         //wydobyć moves
-        HANDLE_ERROR(cudaMemcpy( moves, deviceMovesPtr, sizeof(Move)*nMoves, cudaMemcpyDeviceToHost));
+        HANDLE_ERROR(cudaMemcpy( moves, deviceMoves, sizeof(Move)*nMoves, cudaMemcpyDeviceToHost));
 
         if(DEBUG){
             printf("moves moved to host\n");
@@ -495,7 +500,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         } else {
             changed = 0;
         }
-
+        cudaFree(deviceMoves);
         free(moves);
         free(newCliques);
         if(changed != 0) {
