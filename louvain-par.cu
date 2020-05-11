@@ -410,7 +410,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         Move empty = {.vertice=0,.toClique=0,.gain=0};
         thrust::device_vector<Move> deviceMoves(nMoves, empty);
 
-        HANDLE_ERROR(cudaMemcpy((void*) *deviceCliques, (void*)cliques, sizeof(int) * g->size, cudaMemcpyHostToDevice));
+        HANDLE_ERROR(cudaMemcpy(deviceCliques, cliques, sizeof(int) * g->size, cudaMemcpyHostToDevice));
 
 
         calculateCliqueSizes<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceCliques, deviceCliqueSizes);
