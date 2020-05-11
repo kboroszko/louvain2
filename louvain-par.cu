@@ -381,8 +381,10 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     printf("alloc1 \n");
 
-    thrust::device_vector<int> deviceSizes(g->size, (int) 0);
-    int * deviceSizesPtr = thrust::raw_pointer_cast(&deviceSizes[0]);
+    float * deviceSizes;
+    HANDLE_ERROR(cudaMalloc((void**) &deviceSizes, sizeof(int) * g->size));
+    thrust::device_ptr<int> deviceSizes_ptr(deviceSizes);
+    thrust::fill(deviceSizes_ptr, deviceSizes_ptr + g->size, (float) 0);
 
     printf("alloc2 \n");
 
@@ -390,7 +392,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
     printf("alloc3 \n");
 
-    int maxNeighbours = thrust::reduce(deviceSizes.begin(), deviceSizes.end(), (int)0, thrust::maximum<int>());
+    int maxNeighbours = thrust::reduce(deviceSizesPtr, deviceSizesPtr + g->size, (int) 0, thrust::maximum<int>());
 
     printf("reduce \n");
 
