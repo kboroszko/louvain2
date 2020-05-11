@@ -444,6 +444,8 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
+        movesDone -= 1;
+
 
         if(DEBUG){
             printf("calculated %d moves\n", movesDone);
@@ -489,9 +491,10 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
 
         if(movesDone > 0){
-            float bestdQ = moves[0].gain;
+            Move bestMove = moves[0];
+            float bestdQ = bestMove.gain;
             int movesIter = 2;
-            while((newMod - mod < threshold) && (movesToApply > 1 || bestdQ > threshold)){
+            while(bestdQ > 0 && (newMod - mod < threshold) && (movesToApply > 1 || bestdQ > threshold)){
                 movesToApply = calculateMovesToApply(movesIter, movesDone, nMoves);
                 memcpy(newCliques, cliques, sizeof(int) * g->size);
                 newMod = previewModularity(g, newCliques, moves, movesDone, movesToApply, 0);
@@ -677,7 +680,9 @@ int main(int argc, char **argv){
     int iter = 10;
     while(iter > 1 || minimum > threshold/10.f){
 
-//        printf("========= PHASE 1 ==================\n");
+        if(DEBUG){
+            printf("========= PHASE 1 ==================\n");
+        }
         minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
         minimum = minimum < threshold/20.f ? threshold/20.f : minimum;
 //        printf("min:%f\n", minimum);
@@ -685,7 +690,9 @@ int main(int argc, char **argv){
 
 //        printCliques(g->size, cliques);
 
-//        printf("========= PHASE 2 ==================\n");
+        if(DEBUG){
+            printf("========= PHASE 2 ==================\n");
+        }
         phaseTwo(g, cliques);
 //        printEdges(g);
         updateOldCliques(g, cliques);
