@@ -17,6 +17,27 @@ typedef struct {
     float gain;
 } Move;
 
+typedef struct {
+    int clique;
+    int vertice;
+} Pair;
+
+int cmpPair(const void *a, const void *b){
+    Pair* ap = (Pair*) a;
+    Pair* bp = (Pair*) b;
+    if(ap->clique > bp->clique){
+        return 1;
+    } else if(ap->clique < bp->clique){
+        return -1;
+    } else if(ap->vertice > bp->vertice){
+        return 1;
+    }else if(ap->vertice < bp->vertice){
+        return -1;
+    }else{
+        return 0;
+    }
+}
+
 
 float getKi(Graph *g, int vertice);
 
