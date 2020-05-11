@@ -379,12 +379,20 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     HANDLE_ERROR(cudaMalloc((void**) &movesDoneDevice, sizeof(int)));
     HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
+    printf("alloc1 \n");
+
     thrust::device_vector<int> deviceSizes(g->size, (int) 0);
-    int * deviceSizesPtr = thrust::raw_pointer_cast(&deviceSizes[0]);
+    int * deviceSizesPtr = thrust::raw_pointer_cast(deviceSizes);
+
+    printf("alloc2 \n");
 
     calcNeighbours<<<(g->size + 255)/256, 256>>>(g, deviceSizesPtr);
 
+    printf("alloc3 \n");
+
     int maxNeighbours = thrust::reduce(deviceSizesPtr, deviceSizesPtr + g->size, (int)0, thrust::maximum<int>());
+
+    printf("reduce \n");
 
     float m = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
 
@@ -422,7 +430,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         movesDone = 0;
         HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
-        Move* deviceMovesPtr = thrust::raw_pointer_cast(&deviceMoves[0]);
+        Move* deviceMovesPtr = thrust::raw_pointer_cast(deviceMoves);
         calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMovesPtr, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
@@ -449,7 +457,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 //        thrust::copy(deviceMoves.begin(), deviceMoves.end(), moves);
 //        thrust::host_vector<int> H(deviceMoves.begin(), deviceMoves.end());
 //        for(int cnt = 0; cnt < )
-//        Move * deviceMovesPtr = thrust::raw_pointer_cast(&deviceMoves[0]);
+//        Move * deviceMovesPtr = thrust::raw_pointer_cast(deviceMoves);
         HANDLE_ERROR(cudaMemcpy( moves, deviceMovesPtr, sizeof(Move)*g->size, cudaMemcpyDeviceToHost));
 
 
