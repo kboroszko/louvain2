@@ -406,34 +406,36 @@ int main(int argc, char **argv){
     float mod = modularity(g, cliques);
     printf("modularity:%f\n", mod);
     int iter = 10;
+    phaseTwo(g, cliques);
     while(iter > 1 || minimum > threshold/10.f){
 
-        printf("========= PHASE 1 ==================\n");
+//        printf("========= PHASE 1 ==================\n");
         minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
         minimum = minimum < threshold/20.f ? threshold/20.f : minimum;
 //        printf("min:%f\n", minimum);
         iter = phaseOne(g, cliques, minimum, threshold);
-        printf("modularity3:%f\n", modularity(g, cliques));
+//        printf("modularity3:%f\n", modularity(g, cliques));
 
 //        printCliques(g->size, cliques);
 
-        printf("========= PHASE 2 ==================\n");
-        phaseTwo(g, cliques);
+//        printf("========= PHASE 2 ==================\n");
+        if(iter > 1)
+            phaseTwo(g, cliques);
 //        printEdges(g);
         updateOldCliques(g, cliques);
-        printf("modularity2:%f\n", modularity(g, cliques));
+//        printf("modularity2:%f\n", modularity(g, cliques));
 //        printf("modularity:%f\n", modularity(g, cliques));
 //        printCliques(g->size, cliques);
         bigLoopIteration += 1;
     }
-    printf("converged after %d iterations!\n", bigLoopIteration+1);
+//    printf("converged after %d iterations!\n", bigLoopIteration+1);
     if(verbose != 0){
         printCliques(g->size, cliques);
     }
 
 
     mod = modularity(g, cliques);
-    printf("modularity1:%f\n", mod);
+    printf("modularity:%f\n", mod);
 
     free(cliques);
 
