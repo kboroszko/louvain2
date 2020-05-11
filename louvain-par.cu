@@ -379,11 +379,11 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     printf("calculated:\n");
     printf("m=%f\n", m);
 
-    if(minimum < 1){
-        printf("exiting\n");
-        exit(10);
-
-    }
+//    if(minimum < 1){
+//        printf("exiting\n");
+//        exit(10);
+//
+//    }
 
     float mod = modularity(g, cliques);
 
