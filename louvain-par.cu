@@ -449,7 +449,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
-        movesDone -= 1;
+        movesDone = movesDone > 0 ?  movesDone -1 : 0;
 
         if(DEBUG){
             printf("calculated %d moves\n", movesDone);
