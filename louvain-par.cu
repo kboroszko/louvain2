@@ -304,8 +304,12 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
         Edge e = g->edges[tid];
         if(cliqueFrom != cliques[e.to]){
             int pretender = cliques[e.to];
-            bestOutcomes[tid + blockDim.x] = __int2float_rn(pretender);
-            bestOutcomes[tid] = dQDevice(g, vertice, cliques, pretender, sigmaTot, m, numEdges, edgesPtr);
+            float deltaQ = dQDevice(g, vertice, cliques, pretender, sigmaTot, m, numEdges, edgesPtr);
+
+            if(deltaQ > minimum && moveValid(cliqueFrom, pretender, cliqueSizes)){
+                bestOutcomes[tid + blockDim.x] = __int2float_rn(pretender);
+                bestOutcomes[tid] = deltaQ;
+            }
         }
     }
     //reduce within a block
@@ -322,11 +326,10 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
     if (tid==0){
         int toClique = __float2int_rn(bestOutcomes[blockDim.x]);
         float gain =  bestOutcomes[0];
-        if(gain > minimum && moveValid(cliqueFrom, toClique, cliqueSizes)){
-            int myMove = atomicAdd(nMoves, 1) - 1;
-            Move m = {.vertice=vertice, .toClique = toClique, .gain=gain};
-            moves[myMove] = m;
-        }
+        int myMove = atomicAdd(nMoves, 1) - 1;
+        Move m = {.vertice=vertice, .toClique = toClique, .gain=gain};
+        moves[myMove] = m;
+
     }
 }
 
