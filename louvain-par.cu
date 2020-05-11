@@ -449,7 +449,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         movesDone = 0;
         HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
-
+        //todo change that to max threads 256 :)
         calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
@@ -645,29 +645,36 @@ void printCliques(int size, int*cliques){
 
 void printUsage(char * name){
     printf("# Usage:\n");
-    printf("# %s  [--verbose] <filename>\n", name);
-    printf("#     --verbose   print out the links\n");
-    printf("#     filename    name of file with MTX matrix\n");
+    printf("# %s  -f mtx-matrix-file -g min-gain [-v]\n", name);
+    printf("#     mtx-matrix-file   matrix in mtx format representing undirected weighted graph\n");
+    printf("#     min-gain    minimal modularity gain to move a node between communities\n");
+    printf("#     -v    verbose mode, printing communities\n");
 }
 
 
 int main(int argc, char **argv){
     char * fileName;
     int verbose = 0;
-    if(argc < 2 || argc > 3){
+    float min_gain = 0;
+    if(argc != 5 && argc != 6){
         printf("wrong number of arguments!\n");
         printUsage(argv[0]);
         return 1;
-    } else if(argc == 2){
-        fileName = argv[1];
-    } else {
-        if(strcmp(argv[1], "--verbose") == 0){
-            fileName = argv[2];
+    } else if(strcmp(argv[1], "-f") && strcmp(argv[3], "-g")){
+        if(argc == 6){
+            if(strcmp(argv[5], "-v") != 0){
+                printf("what is that gibberish?!\n");
+                printUsage(argv[0]);
+                return 1;
+            }
             verbose = 1;
-        } else {
-            printUsage(argv[0]);
-            return 2;
         }
+        fileName = argv[2];
+        min_gain = strtof(argv[4], NULL)
+    } else {
+        printf("what is that gibberish?!\n");
+        printUsage(argv[0]);
+        return 1;
     }
 
     MData * dat = readData(fileName);
@@ -685,12 +692,19 @@ int main(int argc, char **argv){
     int bigLoopIteration = 0;
     float minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
 
-    float threshold = 0.00001f;
+    float threshold = min_gain;
 
     // profiler at hangGlider_4 th=0.00001f
 
     float mod = modularity(g, cliques);
-    printf("modularity:%f\n", mod);
+//    printf("modularity:%f\n", mod);
+
+    cudaEvent_t start, stop;
+    HANDLE_ERROR(cudaEventCreate(&start));
+    HANDLE_ERROR(cudaEventCreate(&stop));
+    HANDLE_ERROR(cudaEventRecord(start, 0));
+
+
     int iter = 10;
     while(iter > 1 || minimum > threshold/10.f){
 
@@ -717,11 +731,23 @@ int main(int argc, char **argv){
     if(DEBUG){
         printf("converged after %d iterations!\n", bigLoopIteration+1);
     }
-    if(verbose != 0){
-        printCliques(g->size, cliques);
-    }
+//    if(verbose != 0){
+//        printCliques(g->size, cliques);
+//    }
 
-    printf("modularity:%f\n", modularity(g, cliques));
+
+    HANDLE_ERROR(cudaEventRecord(stop, 0));
+    HANDLE_ERROR(cudaEventSynchronize(stop));
+
+    float elapsedTime;
+    HANDLE_ERROR(cudaEventElapsedTime(&elapsedTime, start, stop));
+
+    printf("%f\n", modularity(g, cliques));
+
+    printf("%f %f\n", elapsedTime, elapsedTime);
+
+    HANDLE_ERROR(cudaEventDestroy(start));
+    HANDLE_ERROR(cudaEventDestroy(stop));
 
     free(cliques);
 
