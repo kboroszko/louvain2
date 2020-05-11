@@ -660,12 +660,12 @@ int main(int argc, char **argv){
         printf("wrong number of arguments!\n");
         printUsage(argv[0]);
         return 1;
-    } else if(strcmp(argv[1], "-f") && strcmp(argv[3], "-g")){
+    } else if((strcmp(argv[1], "-f") == 0) && (strcmp(argv[3], "-g") == 0)){
         if(argc == 6){
             if(strcmp(argv[5], "-v") != 0){
-                printf("what is that gibberish?!\n");
+                printf("vvhat is that gibberish?!\n");
                 printUsage(argv[0]);
-                return 1;
+                return 2;
             }
             verbose = 1;
         }
@@ -674,7 +674,7 @@ int main(int argc, char **argv){
     } else {
         printf("what is that gibberish?!\n");
         printUsage(argv[0]);
-        return 1;
+        return 3;
     }
 
     MData * dat = readData(fileName);
