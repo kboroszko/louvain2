@@ -59,7 +59,7 @@ int bestClique(Graph *g, int vertice, int *cliques, float*sigmaTots, float m){
         int to = g->edges[i].to;
         int in = cliques[to];
         if(in != bestClique && in != cliques[vertice]){
-            float deltaQ = dQ(g, vertice, cliques, in, sigmaTots, m);
+            float deltaQ =  0;//dQ(g, vertice, cliques, in, sigmaTots, m);
             if(deltaQ > best){
                 best = deltaQ;
                 bestClique = in;
