@@ -655,8 +655,8 @@ void printUsage(char * name){
 void printCommunities(Graph *g, int *cliques){
     Pair * pairs = (Pair*) malloc(sizeof(pairs) * g->size);
     for(int i=0; i<g->size; i++){
-        Pair p = {.vertice = i, .clique = cliques[i]};
-        pairs[i] =  p;
+        pairs[i].vertice = i;
+        pairs[i].clique = cliques[i];
     }
     qsort(pairs, g->size, sizeof(Pair), cmpPair);
     int counter = 0;
