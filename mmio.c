@@ -23,12 +23,12 @@ MFormat readSignature(FILE* filePtr){
     int a = fscanf(filePtr,"%*s %*s %s",formatStr);
     int b = fscanf(filePtr,"%s", valueTypeStr)==1;
     int c = fscanf(filePtr,"%s\n",symmetryStr)==1;
-    if(a==1 && b==1 && c==1){
-        printf("readSignature: read format %s %s %s\n", formatStr, valueTypeStr, symmetryStr);
-    } else {
-        printf("readSignature: invalid file or format\n");
-        exit(1);
-    }
+//    if(a==1 && b==1 && c==1){
+//        printf("readSignature: read format %s %s %s\n", formatStr, valueTypeStr, symmetryStr);
+//    } else {
+//        printf("readSignature: invalid file or format\n");
+//        exit(1);
+//    }
 
     if(strcmp("coordinate", formatStr) == 0){
          ret.format = COORDINATE;
@@ -92,7 +92,7 @@ MData * readData(const char * filename){
         }
     }
 
-    printf("reading rows=%d  cols=%d  lines=%d\n", num_rows, num_cols, num_lines);
+//    printf("reading rows=%d  cols=%d  lines=%d\n", num_rows, num_cols, num_lines);
 
     MData *data = initMData(num_rows, num_cols, num_lines, format);
 
