@@ -335,7 +335,13 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
 
 
 
-
+void destroyDeviceGraph(Graph * deviceGraph){
+    Graph g;
+    HANDLE_ERROR(cudaMemcpy((void*) &g, (void*)deviceGraph, sizeof(Graph), cudaMemcpyDeviceToHost));
+    cudaFree(g.edges);
+    cudaFree(g.verticeLastEdgeExclusive);
+    cudaFree(deviceGraph);
+}
 
 
 
@@ -382,30 +388,28 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     HANDLE_ERROR(cudaMalloc((void**) &movesDoneDevice, sizeof(int)));
     HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
-    printf("alloc1 \n");
 
     int * deviceSizes;
     HANDLE_ERROR(cudaMalloc((void**) &deviceSizes, sizeof(int) * g->size));
     thrust::device_ptr<int> deviceSizes_ptr(deviceSizes);
     thrust::fill(deviceSizes_ptr, deviceSizes_ptr + g->size, (float) 0);
 
-    printf("alloc2 \n");
 
     calcNeighbours<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceSizes);
 
-    printf("alloc3 \n");
 
     int maxNeighbours = thrust::reduce(deviceSizes_ptr, deviceSizes_ptr + g->size, (int) 0, thrust::maximum<int>());
 
-    printf("reduce \n");
 
     float m = thrust::reduce(deviceSigmaTot_ptr, deviceSigmaTot_ptr + g->size, (float) 0, thrust::plus<float>());
 
 
     m = m/2;
+    if(DEBUG){
+        printf("calculated:\n");
+        printf("m=%f\n, maxN=%d", m, maxNeighbours);
+    }
 
-    printf("calculated:\n");
-    printf("m=%f\n, maxN=%d", m, maxNeighbours);
 
 //    if(minimum < 1){
 //        printf("exiting\n");
@@ -512,7 +516,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
             if (newMod - mod > threshold) {
                 memcpy(cliques, newCliques, sizeof(int) * g->size);
                 mod = newMod;
-                printf("modularity: %f\n", modularity(g, cliques));
+//                printf("modularity: %f\n", modularity(g, cliques));
             }
             if(movesToApply == 1 && bestdQ < threshold){
                 changed = 0;
@@ -525,6 +529,15 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         free(newCliques);
 
     }
+
+    cudaFree(deviceSigmaTot);
+    cudaFree(deviceCliques);
+    cudaFree(deviceCliqueSizes);
+    cudaFree(movesDoneDevice);
+    cudaFree(deviceSizes);
+
+    destroyDeviceGraph(deviceGraph);
+
     //distroy all ptrs and graph
     return iters;
 }
