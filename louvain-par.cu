@@ -202,6 +202,18 @@ void copyGraphToDevice(Graph*g, Graph**deviceGraphPtr){
 //    printf("graph init succeded\n");
 }
 
+__device__ float getKiinDevice(Graph *g, int vertice, int* cliques, int in ){
+    float sum=0;
+    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
+        Edge e = g->edges[i];
+        if(e.to != vertice && cliques[e.to] == in){
+            sum+= e.value;
+        }
+    }
+    return sum;
+}
+
+
 
 __device__ float dQDevice(Graph*g, int vertice, int *cliques, int in, float* sigmaTot, float m, int numEdges, Edge* edges){
 
@@ -215,16 +227,6 @@ __device__ float dQDevice(Graph*g, int vertice, int *cliques, int in, float* sig
     return  part1+part2;
 }
 
-__device__ float getKiinDevice(Graph *g, int vertice, int* cliques, int in ){
-    float sum=0;
-    for(int i=EDGES_IDX(g,vertice-1); i<EDGES_IDX(g,vertice); i++){
-        Edge e = g->edges[i];
-        if(e.to != vertice && cliques[e.to] == in){
-            sum+= e.value;
-        }
-    }
-    return sum;
-}
 
 
 
@@ -394,9 +396,7 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
 
-        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(
-                deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum,
-                );
+        calculateMoves(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
 
