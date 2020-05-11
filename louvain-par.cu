@@ -409,6 +409,9 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         Move empty = {.vertice=0,.toClique=0,.gain=0};
         thrust::device_vector<Move> deviceMoves(nMoves, empty);
 
+        HANDLE_ERROR(cudaMemcpy((void*) *deviceCliques, (void*)cliques, sizeof(int) * g->size, cudaMemcpyHostToDevice));
+
+
         calculateCliqueSizes<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceCliques, deviceCliqueSizes);
 
         if(DEBUG){
@@ -424,6 +427,11 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
 
+        if(DEBUG){
+            printf("calculated %d moves\n", movesDone);
+        }
+
+
         if(movesDone > 0){
             changed = 1;
         }
@@ -431,8 +439,8 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
 //        thrust::stable_sort(deviceMoves.begin(),deviceMoves.end(), compareMovesThrust);
 
 
-        // wydobyć cliques, moves
-        HANDLE_ERROR(cudaMemcpy((void*) cliques, (void*)deviceCliques, sizeof(int)*g->size, cudaMemcpyDeviceToHost));
+        // wydobyć, moves
+//        HANDLE_ERROR(cudaMemcpy((void*) cliques, (void*)deviceCliques, sizeof(int)*g->size, cudaMemcpyDeviceToHost));
 
         Move * moves = (Move*) calloc(nMoves, sizeof(Move));
 
