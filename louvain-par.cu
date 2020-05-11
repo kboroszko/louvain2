@@ -287,7 +287,7 @@ __global__ void calcNeighbours(Graph *g, int *sizes){
 
 
 
-__global__ void ves(Graph *g, int* cliques, int*cliqueSizes,
+__global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
         Move* moves, float m, float* sigmaTot,
         float minimum, int * nMoves){
     extern __shared__ float bestOutcomes[];
