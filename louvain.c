@@ -3,6 +3,7 @@
 //
 
 #include <assert.h>
+#include <time.h>
 #include "louvain.h"
 #include "graph-utils.h"
 
@@ -402,6 +403,8 @@ int main(int argc, char **argv){
     float threshold = 0.00001f;
 
     // profiler at hangGlider_4 th=0.00001f
+    clock_t begin = clock();
+
 
     float mod = modularity(g, cliques);
     printf("modularity:%f\n", mod);
@@ -433,9 +436,13 @@ int main(int argc, char **argv){
         printCliques(g->size, cliques);
     }
 
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
 
     mod = modularity(g, cliques);
     printf("modularity:%f\n", mod);
+
+    printf("time: %f", time_spent);
 
     free(cliques);
 

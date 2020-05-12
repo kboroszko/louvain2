@@ -289,7 +289,7 @@ __global__ void calcNeighbours(Graph *g, int *sizes){
 
 __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
         Move* moves, float m, float* sigmaTot,
-        float minimum, int * nMoves){
+        float minimum, int * nMoves, int edgesPerThread){
     extern __shared__ float bestOutcomes[];
     int vertice = blockIdx.x;
     int edgesStart =  EDGES_IDX(g, vertice - 1);
@@ -300,18 +300,26 @@ __global__ void calculateMoves(Graph *g, int* cliques, int*cliqueSizes,
     bestOutcomes[tid + blockDim.x] = -1.f;
     bestOutcomes[tid] = 0;
     int cliqueFrom = cliques[vertice];
-    if(tid < numEdges){
-        Edge e = g->edges[edgesStart + tid];
-        if(cliqueFrom != cliques[e.to]){
-            int pretender = cliques[e.to];
-            float deltaQ = dQDevice(g, vertice, cliques, pretender, sigmaTot, m, numEdges, edgesPtr);
+    float bestSoFar = 0.f;
+    int bestSoFarClique = -1;
+    for(int edgeIdx=tid*edgesPerThread; edgeIdx < (tid+ 1)*edgesPerThread && edgeIdx < numEdges; edgeIdx++){
+            Edge e = g->edges[edgesStart + edgeIdx];
+            if(cliqueFrom != cliques[e.to]){
+                int pretender = cliques[e.to];
+                float deltaQ = dQDevice(g, vertice, cliques, pretender, sigmaTot, m, numEdges, edgesPtr);
 
-            if(deltaQ > minimum && moveValid(cliqueFrom, pretender, cliqueSizes)){
-                bestOutcomes[tid + blockDim.x] = __int2float_rn(pretender);
-                bestOutcomes[tid] = deltaQ;
+                if(deltaQ > bestSoFar && moveValid(cliqueFrom, pretender, cliqueSizes)){
+                    bestSoFar = deltaQ;
+                    bestSoFarClique = pretender;
+                }
             }
-        }
     }
+
+    if(bestSoFar > minimum){
+        bestOutcomes[tid + blockDim.x] = __int2float_rn(bestSoFarClique);
+        bestOutcomes[tid] = bestSoFar;
+    }
+
     //reduce within a block
     for (int stride=1;stride<blockDim.x;stride*=2)
     {
@@ -450,7 +458,9 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
         HANDLE_ERROR(cudaMemcpy((void*) movesDoneDevice, (void*)&movesDone, sizeof(int), cudaMemcpyHostToDevice));
 
         //todo change that to max threads 256 :)
-        calculateMoves<<<g->size, maxNeighbours, maxNeighbours * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice);
+        int edgesPerThread = (maxNeighbours + 255)/256;
+        int threads = edgesPerThread > 1 ? 256 : 1;
+        calculateMoves<<<g->size, threads, threads * 2 * sizeof(float)>>>(deviceGraph, deviceCliques, deviceCliqueSizes, deviceMoves, m,deviceSigmaTot, minimum, movesDoneDevice, edgesPerThread);
 
         HANDLE_ERROR(cudaMemcpy((void*)&movesDone, (void*) movesDoneDevice, sizeof(int), cudaMemcpyDeviceToHost));
         movesDone = movesDone > 0 ?  movesDone -1 : 0;
