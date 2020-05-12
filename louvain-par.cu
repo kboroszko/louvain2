@@ -366,9 +366,14 @@ void destroyDeviceGraph(Graph * deviceGraph){
 
 
 
-int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
+int phaseOne(Graph *g, int *cliques, float minimum, float threshold, float * memTime){
     int changed = 1;
     int iters = 0;
+
+    cudaEvent_t start, stop;
+    HANDLE_ERROR(cudaEventCreate(&start));
+    HANDLE_ERROR(cudaEventCreate(&stop));
+    HANDLE_ERROR(cudaEventRecord(start, 0));
 
     Graph * deviceGraph;
     copyGraphToDevice(g, &deviceGraph);
@@ -401,6 +406,19 @@ int phaseOne(Graph *g, int *cliques, float minimum, float threshold){
     HANDLE_ERROR(cudaMalloc((void**) &deviceSizes, sizeof(int) * g->size));
     thrust::device_ptr<int> deviceSizes_ptr(deviceSizes);
     thrust::fill(deviceSizes_ptr, deviceSizes_ptr + g->size, (float) 0);
+
+
+
+    HANDLE_ERROR(cudaEventRecord(stop, 0));
+    HANDLE_ERROR(cudaEventSynchronize(stop));
+
+    HANDLE_ERROR(cudaEventElapsedTime(memTime, start, stop));
+//    printf("Time to generate: %3.1f ms\n", elapsedTime);
+
+    HANDLE_ERROR(cudaEventDestroy(start));
+    HANDLE_ERROR(cudaEventDestroy(stop));
+
+
 
 
     calcNeighbours<<<(g->size + 255)/256, 256>>>(deviceGraph, deviceSizes);
@@ -734,6 +752,7 @@ int main(int argc, char **argv){
     HANDLE_ERROR(cudaEventCreate(&stop));
     HANDLE_ERROR(cudaEventRecord(start, 0));
 
+    float memTimeTotal = 0.f;
 
     int iter = 10;
     while(iter > 1 || minimum > threshold/10.f){
@@ -744,7 +763,9 @@ int main(int argc, char **argv){
         minimum = 0.1 / (2 + bigLoopIteration) - 0.02;
         minimum = minimum < threshold/20.f ? threshold/20.f : minimum;
 //        printf("min:%f\n", minimum);
-        iter = phaseOne(g, cliques, minimum, threshold);
+        float memTime;
+        iter = phaseOne(g, cliques, minimum, threshold, &memTime);
+        memTimeTotal += memTime;
 //        printCliques(g->size, cliques);
         if(DEBUG){
             printf("========= PHASE 2 ==================\n");
@@ -776,7 +797,7 @@ int main(int argc, char **argv){
 
     printf("%f\n", modularity(g, cliques));
 
-    printf("%f %f\n", elapsedTime, elapsedTime);
+    printf("%f %f\n", elapsedTime - memTimeTotal, elapsedTime);
 
     if(verbose != 0){
         printCommunities(g, cliques);
